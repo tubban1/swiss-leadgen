@@ -1,13 +1,13 @@
-# 🇨🇭 Swiss Multi-Tenant Website Design Standard & Automated Provisioning Spec
-## 瑞士多租户 SaaS 建站与视觉美学与自动化域名流水线规范
+# 🇨🇭 Swiss Multi-Tenant Website Design Standard & Explicit 1-by-1 Provisioning Spec
+## 瑞士多租户 SaaS 建站视觉美学与逐个独立域名挂载/解析固化规范
 
-> 本文档固化了平台所有的视觉美学标准（Awwwards 级别）、布局规范、德法双语交互，以及 **Vercel REST API + GoDaddy DNS API 自动化固化部署流程**。所有新加入的商家与城市拓展均必须 100% 遵循此标准。
+> 本文档固化了平台所有的视觉美学标准（Awwwards 级别）、布局规范、德法双语交互，以及 **Vercel REST API + GoDaddy DNS API 逐个独立挂载/显式解析固化流程**。所有新加入的商家与城市拓展均必须 100% 遵循此标准。
 
 ---
 
-## 🏛️ 1. 自动化部署与网络挂载固化标准 (Vercel & GoDaddy Solidified Pipeline)
+## 🏛️ 1. 逐个独立挂载与显式解析固化标准 (Explicit 1-by-1 Provisioning Pipeline)
 
-为避免人工干预 DNS 与域名配置，平台所有新增商家的上游接入已完全固化为自动化流水线 `DeployAgent` (位于 `agents/deploy_agent.py`)：
+鉴于 Vercel 项目采用独立域名挂载模式，平台所有新增商家的网络部署已完全固化为**“逐个独立挂载 Vercel、逐个显式解析 GoDaddy”**的标准流水线：
 
 ```
                     ┌────────────────────────────────────────┐
@@ -25,9 +25,9 @@
            │                                                         │
            ▼                                                         ▼
 ┌──────────────────────────────────────┐  ┌──────────────────────────────────────┐
-│ 3. Vercel REST API 动态挂载 (v9)    │  │ 4. GoDaddy REST API CNAME 自动解析   │
+│ 3. Vercel REST API 逐个独立挂载      │  │ 4. GoDaddy REST API 逐个显式 CNAME   │
 │    VercelAgent.add_domain(subdomain) │  │    GoDaddyAgent.set_cname(prefix,    │
-│    -> 自动挂载子域名进 Vercel 项目   │  │    "cname.vercel-dns.com")           │
+│    -> 挂载进项目 multi_tenant_site   │  │    "cname.vercel-dns.com")           │
 └──────────────────┬───────────────────┘  └──────────────────┬───────────────────┘
                    │                                         │
                    └────────────────────┬────────────────────┘
@@ -40,14 +40,14 @@
 
 ### 固化 API 配置文件与凭证要求 (`.env`)
 ```env
-# Vercel 自动化凭证
-VERCEL_TOKEN=your_vercel_bearer_token
-VERCEL_PROJECT_ID=tubban-multi-tenant-site
+# Vercel 自动化凭证 (对应项目 multi_tenant_site)
+VERCEL_TOKEN=vcp_...
+VERCEL_PROJECT_ID=multi_tenant_site
 
 # GoDaddy 自动化凭证
-GODADDY_TOKEN=your_godaddy_personal_access_token
-GODADDY_API_KEY=your_godaddy_api_key
-GODADDY_API_SECRET=your_godaddy_api_secret
+GODADDY_TOKEN=gd_pat_...
+GODADDY_API_KEY=your_key
+GODADDY_API_SECRET=your_secret
 ROOT_DOMAIN=sites.tubban.com
 ```
 
@@ -80,8 +80,8 @@ ROOT_DOMAIN=sites.tubban.com
 
 ## 📋 3. 规范落地检查清单 (Checklist)
 
-- [x] 新增商家是否自动经由 `DeployAgent` 调起 Vercel & GoDaddy API？
-- [x] 商家域名是否具备唯一性（如 `*.sites.tubban.com`）？
+- [x] 新增商家是否自动经由 `DeployAgent` 逐个向 Vercel (`multi_tenant_site`) 与 GoDaddy 申请挂载？
+- [x] 商家子域名是否具备唯一性（如 `*.sites.tubban.com`）？
 - [x] 页面视觉是否应用了 Bento Grid 与 Ambient Mesh Gradients？
 - [x] 德法双语切换在 Desktop 与 Mobile 端均响应灵敏？
 - [x] 页面包含可交互的在线预约/预订 Lead-Capture 表单？
