@@ -3,9 +3,10 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl;
-  const hostname = req.headers.get('host') || '';
+  // 精准使用 Next.js 官方推荐的 req.nextUrl.hostname
+  const hostname = req.nextUrl.hostname || req.headers.get('host') || '';
 
-  // 1. 静态资源、API 放行
+  // 1. 静态资源、内部 API 路由放行
   if (
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api') ||
@@ -14,7 +15,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. 提取子域名前缀
+  // 2. 提取子域名前缀 (如 cafe-bellevue.sites.tubban.com -> cafe-bellevue)
   let subdomain = '';
   if (hostname.includes('.sites.tubban.com')) {
     subdomain = hostname.replace('.sites.tubban.com', '');
@@ -22,7 +23,7 @@ export function middleware(req: NextRequest) {
     subdomain = hostname.replace('.tubban.com', '');
   }
 
-  // 3. 主站/Admin 后台逻辑
+  // 3. 主站 / Admin 后台无缝放行
   if (!subdomain || subdomain === 'sites' || subdomain === 'admin' || hostname.includes('vercel.app')) {
     if (url.pathname === '/') {
       url.pathname = '/admin/dashboard';
@@ -31,7 +32,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 4. 重写至 Next.js 动态多租户路径 /site/[domain]
+  // 4. 将子域名无缝重写映射至 /site/[domain] 动态页面
   const cleanPath = url.pathname === '/' ? '' : url.pathname;
   url.pathname = `/site/${subdomain}${cleanPath}`;
   return NextResponse.rewrite(url);
