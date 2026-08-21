@@ -153,100 +153,13 @@ export default function DynamicTenantView({
   reviewsData
 }: TenantProps) {
   const [lang, setLang] = useState<'de' | 'fr'>('de');
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [adminPassInput, setAdminPassInput] = useState('');
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [adminError, setAdminError] = useState('');
-  const [adminLoading, setAdminLoading] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState('');
 
-  // Admin Modal Editable States
-  const [editHeroTitleDe, setEditHeroTitleDe] = useState('');
-  const [editHeroSubtitleDe, setEditHeroSubtitleDe] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [currentConfig, setCurrentConfig] = useState(siteConfig || {});
-  const [jsonConfigStr, setJsonConfigStr] = useState(JSON.stringify(siteConfig || {}, null, 2));
-
-  // 动态数据提取
-  const dynamicContent = currentConfig?.content?.[lang] || currentConfig?.content?.de;
+  const dynamicContent = siteConfig?.content?.[lang] || siteConfig?.content?.de;
   const heroTitle = dynamicContent?.hero?.title;
   const heroSubtitle = dynamicContent?.hero?.subtitle;
-  const dynamicServices = currentConfig?.entities?.services;
-  const dynamicReviews = currentConfig?.entities?.reviews;
-  const displayPhone = currentConfig?.business?.contact?.phone || phone;
-
-  const handleAdminAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAdminLoading(true);
-    setAdminError('');
-
-    try {
-      const targetDomain = window.location.hostname;
-      const res = await fetch('/api/site/admin/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: targetDomain, pass: adminPassInput })
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setIsAdminLoggedIn(true);
-        if (data.siteConfig) {
-          setCurrentConfig(data.siteConfig);
-          setJsonConfigStr(JSON.stringify(data.siteConfig, null, 2));
-          setEditHeroTitleDe(data.siteConfig?.content?.de?.hero?.title || '');
-          setEditHeroSubtitleDe(data.siteConfig?.content?.de?.hero?.subtitle || '');
-          setEditPhone(data.siteConfig?.business?.contact?.phone || phone);
-        }
-      } else {
-        setAdminError(data.error || 'Ungültiges Passwort (Invalid Admin Password)');
-      }
-    } catch (err: any) {
-      setAdminError('Netzwerkfehler (Network Error)');
-    } finally {
-      setAdminLoading(false);
-    }
-  };
-
-  const handleSaveAdminConfig = async () => {
-    setAdminLoading(true);
-    setSaveSuccess('');
-    setAdminError('');
-
-    try {
-      const targetDomain = window.location.hostname;
-      let updatedCfg = JSON.parse(JSON.stringify(currentConfig || {}));
-
-      if (!updatedCfg.content) updatedCfg.content = { de: { hero: {} }, fr: { hero: {} } };
-      if (!updatedCfg.content.de) updatedCfg.content.de = { hero: {} };
-      updatedCfg.content.de.hero.title = editHeroTitleDe || heroTitle;
-      updatedCfg.content.de.hero.subtitle = editHeroSubtitleDe || heroSubtitle;
-
-      if (!updatedCfg.business) updatedCfg.business = { contact: {} };
-      if (!updatedCfg.business.contact) updatedCfg.business.contact = {};
-      updatedCfg.business.contact.phone = editPhone || displayPhone;
-
-      const res = await fetch('/api/site/admin/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: targetDomain, pass: adminPassInput, siteConfig: updatedCfg })
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setCurrentConfig(updatedCfg);
-        setJsonConfigStr(JSON.stringify(updatedCfg, null, 2));
-        setSaveSuccess('✅ 网站内容修改成功，已实时发布于 Neon 数据库！');
-      } else {
-        setAdminError(data.error || 'Fehler beim Speichern');
-      }
-    } catch (err: any) {
-      setAdminError('Speicherfehler (Save error)');
-    } finally {
-      setAdminLoading(false);
-    }
-  };
+  const dynamicServices = siteConfig?.entities?.services;
+  const dynamicReviews = siteConfig?.entities?.reviews;
+  const displayPhone = siteConfig?.business?.contact?.phone || phone;
 
   const images = {
     bakery: {
@@ -295,14 +208,14 @@ export default function DynamicTenantView({
           <span>{lang === 'de' ? `Traditionelle Schweizer Qualität · ${city}` : `Qualité artisanale suisse · ${city}`}</span>
         </div>
         <div className="flex items-center gap-3">
-          {/* 🔑 ADMIN LOGIN BUTTON */}
-          <button
-            onClick={() => setShowAdminModal(true)}
-            className="px-3 py-1 bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 border border-amber-400/40 rounded-full text-[10px] font-mono font-bold transition flex items-center gap-1 shadow-lg shadow-amber-400/10"
+          {/* 🔑 DIRECT LINK TO ADMIN PORTAL */}
+          <a
+            href="/admin"
+            className="px-3.5 py-1 bg-amber-400/20 hover:bg-amber-400/40 text-amber-300 border border-amber-400/40 rounded-full text-[10px] font-mono font-bold transition flex items-center gap-1.5 shadow-lg shadow-amber-400/10"
           >
-            <Lock className="w-3 h-3 text-amber-400" />
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
             <span>🔑 Merchant Admin</span>
-          </button>
+          </a>
           <LangSwitcher lang={lang} setLang={setLang} />
         </div>
       </div>
@@ -405,133 +318,15 @@ export default function DynamicTenantView({
       <footer className="py-12 border-t border-white/10 text-center text-xs text-amber-200/50 font-mono space-y-3">
         <p>{name} · {address} · Tel: {displayPhone}</p>
         <div>
-          <button
-            onClick={() => setShowAdminModal(true)}
+          <a
+            href="/admin"
             className="text-[11px] text-amber-400 hover:underline font-bold inline-flex items-center gap-1"
           >
             <Lock className="w-3 h-3" />
             <span>🔑 Merchant Admin Portal (修改网站内容)</span>
-          </button>
+          </a>
         </div>
       </footer>
-
-      {/* 🔑 ADMIN OVERLAY MODAL */}
-      {showAdminModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-[#0d0a08] border border-white/15 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
-            <button
-              onClick={() => setShowAdminModal(false)}
-              className="absolute top-5 right-5 text-zinc-400 hover:text-white p-1 rounded-full bg-white/5"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {!isAdminLoggedIn ? (
-              <div className="space-y-6">
-                <div className="text-center space-y-2">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-400 text-black flex items-center justify-center mx-auto font-bold shadow-lg shadow-amber-400/20">
-                    <Lock className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-2xl font-serif font-bold text-white">Merchant Admin Login</h3>
-                  <p className="text-xs text-amber-200/60 font-mono">{name} Admin Authentication</p>
-                </div>
-
-                {adminError && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold text-center">
-                    {adminError}
-                  </div>
-                )}
-
-                <form onSubmit={handleAdminAuth} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">Random Admin Password</label>
-                    <div className="relative">
-                      <input
-                        type="password"
-                        required
-                        value={adminPassInput}
-                        onChange={(e) => setAdminPassInput(e.target.value)}
-                        placeholder="Z.B. ZZqv0GLKCEBH"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-400 transition font-mono tracking-wider pl-10"
-                      />
-                      <Key className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5" />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={adminLoading}
-                    className="w-full py-3 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2"
-                  >
-                    {adminLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>Login & Edit Website</span>}
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                  <div>
-                    <h3 className="text-xl font-serif font-bold text-amber-100">Live Website Content Editor</h3>
-                    <p className="text-xs text-amber-400 font-mono">Neon PostgreSQL Direct Sync</p>
-                  </div>
-                </div>
-
-                {saveSuccess && (
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold text-center">
-                    {saveSuccess}
-                  </div>
-                )}
-                {adminError && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold text-center">
-                    {adminError}
-                  </div>
-                )}
-
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-                  <div>
-                    <label className="block text-xs font-mono text-amber-300 mb-1">Hero Title (DE)</label>
-                    <input
-                      type="text"
-                      value={editHeroTitleDe}
-                      onChange={(e) => setEditHeroTitleDe(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-mono text-amber-300 mb-1">Hero Subtitle (DE)</label>
-                    <textarea
-                      rows={2}
-                      value={editHeroSubtitleDe}
-                      onChange={(e) => setEditHeroSubtitleDe(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-mono text-amber-300 mb-1">Telefon (Phone)</label>
-                    <input
-                      type="text"
-                      value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleSaveAdminConfig}
-                  disabled={adminLoading}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
-                >
-                  {adminLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  <span>Save & Live Publish 🚀</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

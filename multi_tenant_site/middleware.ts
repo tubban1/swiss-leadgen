@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 export function middleware(req: NextRequest) {
   const url = req.nextUrl;
   
-  // 1. 静态资源与内部 API 放行
+  // 1. 静态资源与 API 放行
   if (
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api') ||
@@ -13,11 +13,10 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. 抓取 Host
+  // 2. 提取子域名
   const rawHost = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.hostname || '';
   const hostname = rawHost.split(':')[0];
 
-  // 3. 提取子域名前缀
   let subdomain = '';
   if (hostname.includes('.sites.tubban.com')) {
     subdomain = hostname.replace('.sites.tubban.com', '');
@@ -25,29 +24,30 @@ export function middleware(req: NextRequest) {
     subdomain = hostname.replace('.tubban.com', '');
   }
 
-  // 4. 平台总管理控制台处理 (如 admin.tubban.com 或主站 /admin)
+  // 3. 平台总系统后台处理 (只针对主域名 sites / admin 或根路径)
   if (!subdomain || subdomain === 'sites' || subdomain === 'admin' || hostname === 'localhost' || hostname === '127.0.0.1') {
-    if (url.pathname === '/admin' || url.pathname === '/') {
+    if (url.pathname === '/admin' || url.pathname === '/admin/dashboard') {
       url.pathname = '/admin/dashboard';
       return NextResponse.rewrite(url);
     }
     return NextResponse.next();
   }
 
-  // 5. 商户子域名映射处理 (如 backerei-muller.tubban.com)
-  if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) {
-    // 映射到 /site/[domain]/admin
-    url.pathname = `/site/${subdomain}/admin`;
+  // 4. 关键：商户专属子域名的 /admin 显式重写映射至 /admin/merchant
+  if (url.pathname === '/admin' || url.pathname === '/admin/') {
+    url.pathname = '/admin/merchant';
+    url.searchParams.set('domain', subdomain);
     return NextResponse.rewrite(url);
   }
 
-  // 默认根路径映射到 /site/[domain]
-  if (url.pathname === '/' || !url.pathname.startsWith('/site/')) {
-    url.pathname = `/site/${subdomain}${url.pathname === '/' ? '' : url.pathname}`;
-    return NextResponse.rewrite(url);
+  // 5. 其他内部已路由路径放行
+  if (url.pathname.startsWith('/admin/merchant') || url.pathname.startsWith('/site/')) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // 6. 默认根路径与常规页面映射至 /site/[subdomain]
+  url.pathname = `/site/${subdomain}${url.pathname === '/' ? '' : url.pathname}`;
+  return NextResponse.rewrite(url);
 }
 
 export const config = {
