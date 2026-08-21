@@ -1,27 +1,47 @@
 # 🇨🇭 Swiss LeadGen — 多租户商业建站标准规范文档 (Website Design Standard)
 
-> **重要说明**：本项目中所有由 AI 引擎或 Lead Scraping 流程创建、渲染的瑞士商户网站，必须**严格强制遵守**本规范文档中的美学与功能要求。
+> **重要说明**：本项目中所有由 AI 引擎或 Lead Scraping 流程创建、渲染的瑞士商户网站，必须**严格强制遵守**本规范文档中的美学、Look and Feel 独立视觉气质、Layout 版式架构与功能要求。
 
 ---
 
-## 🎨 一、 视觉美学与设计原则 (Visual & Aesthetics)
+## 🎨 一、 5 大行业专属“独立 Look and Feel 与 Layout 架构” (Custom Aesthetics & Layouts)
 
-1. **拒绝通用/平庸 UI (No Generic Designs)**：
-   - 严禁使用极简单调的白底黑字或无质感卡片。
-   - 针对不同行业（Bäckerei, Coiffeur, Zahnarzt, Sanitär, Café）必须采用**定制的行业色调与视觉语言**：
-     - **Bäckerei (烘焙店)**: 暖香麦金 / 奶油象牙白 / 烤棕调 (`Warm Amber & Cream Ivory`)
-     - **Coiffeur / Beauty (美发沙龙)**: 时尚玫瑰金 / 雾粉 / 奢华炭黑 (`Luxe Rose Gold & Soft Blush`)
-     - **Zahnarzt (牙科诊所)**: 瑞士医疗无瑕蓝 / 极清白 (`Swiss Medical Cyan & Pure White`)
-     - **Sanitär / Trade (水暖工程)**: 工业钢蓝 / 警示活力橙 (`Industrial Steel Blue & Safety Orange`)
-     - **Café / Restaurant (咖啡餐馆)**: 意式浓缩暗调 / 优雅金赭色 (`Rich Espresso & Champagne Accent`)
+严禁在不同行业之间套用相同的通用 Layout 版式！必须根据行业属性提供**形态各异、版式截然不同**的独立系统：
 
-2. **必须包含高清真实视觉图片 (High-Res Industry Imagery)**：
-   - 严禁出现空白占位图或灰色框。
-   - 页面 Hero 区、产品/服务卡片、环境画廊必须嵌入极高清晰度的真实商业质感图片。
+1. 🥐 **Bäckerei (烘焙店) — 温馨暖麦手工拆分版式 (Warm Bakery Counter Layout)**
+   - **Look and Feel**: 暖香麦金、烘焙奶油色 (`Warm Amber & Bakery Golden`)
+   - **Layout 版式**: 
+     - **Hero Section**: 采用**左侧文案+右侧经典烘焙柜台大图**的双栏拆分布局。
+     - **产品 Section**: **“Unsere Spezialitäten” 3 列招牌产品卡片**（Buttergipfeli, Pâtisserie, Urdinkelbrot）。
+   - **专属 Badge**: 05:30 晨间烘焙承诺 + 100% Natursauerteig 标志。
 
-3. **微交互与响应式布局 (Micro-Animations & Responsive)**：
-   - 必须包含 Hover 高光过渡、阴影悬浮提升、毛玻璃悬浮 Header (`backdrop-blur`)。
-   - 完美适配 Mobile (手机)、Tablet (平板) 和 Desktop (桌面端)。
+2. ✂️ **Coiffeur / Beauty (美发沙龙) — 时尚奢华杂志感版式 (Editorial Magazine Layout)**
+   - **Look and Feel**: 名媛时尚、奢华黑粉/玫瑰金 (`Luxe Onyx Black & Rose Gold`)
+   - **Layout 版式**:
+     - **Hero Section**: 采用**居中大字号杂志排版 + 全宽时尚海报图**的 Editorial 杂志流线版式。
+     - **价目 Section**: **“Price List & Services” 奢华护理与剪发价目表** (Cut & Style, Balayage, Styling)。
+   - **专属 Badge**: Haute Coiffure Switzerland 尊享标志。
+
+3. 🦷 **Zahnarzt (牙科诊所) — 瑞士无瑕医疗极简版式 (Swiss Medical Precision Layout)**
+   - **Look and Feel**: 严谨瑞士医疗、极清医用蓝白 (`Swiss Medical Cyan & Ice White`)
+   - **Layout 版式**:
+     - **Hero Section**: 采用**临床信任数据 + 无痛诊疗 double callout** 布局。
+     - **诊疗 Section**: **“Unsere Behandlungsbereiche” 4 宫格极简白框** (Prophylaxe, Bleaching, Implantologie, Emergency)。
+   - **专属 Badge**: Swiss Quality Standard + 100% 舒缓无痛诊疗承诺。
+
+4. 🛠️ **Sanitär / Trade (水暖工程/维修) — 24/7 工业应急重载版式 (Industrial Heavy Action Layout)**
+   - **Look and Feel**: 工业钢蓝、高对比警示活力橙 (`Industrial Steel Blue & Safety Orange`)
+   - **Layout 版式**:
+     - **Hero Section**: **顶部 24/7 应急通知条 + 30 分钟极速出勤动态 Display** 布局。
+     - **流程 Section**: **“In 3 Schritten” 3 步骤解决管道与水暖问题流程卡** (1. Anrufen ➔ 2. Anfahrt ➔ 3. Reparatur)。
+   - **专属 Badge**: 24/7 Notfallservice + 30 MIN 平均出勤响应。
+
+5. ☕️ **Café / Restaurant (咖啡餐馆) — 意式暗调餐馆 Bistrot 版式 (Dark Bistrot Layout)**
+   - **Look and Feel**: 意式浓缩咖啡暗系、香槟金 (`Dark Espresso & Champagne Gold`)
+   - **Layout 版式**:
+     - **Hero Section**: 居中暖意 Bistrot 氛围 + Barista 特调 Coffee 卡片。
+     - **菜单/画廊 Section**: 精选菜品与环境图集展现。
+   - **专属 Badge**: Barista Specialty Coffee & Cuisine 认证。
 
 ---
 
@@ -29,33 +49,12 @@
 
 根据瑞士国情（德语区 & 法语区/双语城市如 Biel/Bienne），所有网站**必须原生提供德语 (DE) 与法语 (FR) 的无缝一键实时切换**：
 
-1. **切换器位置**：位于 Header 导航栏显著位置（`[ DE | FR ]` 切换开关）。
-2. **全页面文本覆盖**：
-   - Hero 标题 & 描述
-   - 核心优势与品质承诺
-   - 菜单 / 服务 / 价目表
-   - 客户评价 & 评分
-   - 在线预订与咨询表单
-   - 营业时间与页脚版权信息
+1. **切换器位置**：位于 Header/Top bar 显著位置（`[ DE | FR ]` 切换开关）。
+2. **全页面文本覆盖**：全站所有 Layout 模块文本均针对 DE (Deutsch) 和 FR (Français) 进行了地道德法双语适配。
 
 ---
 
-## 📐 三、 标准页面内容架构 (Standard Content Layout)
+## ⚙️ 三、 终极验证与部署标准 (Verification Standard)
 
-每个商户网站必须包含以下 **8 大完整结构模块**：
-
-1. **Top Announcement Bar**: 提示瑞士本地品质保证 + 语言切换器。
-2. **Navbar**: 品牌 Logo、极简导航、一键拨号 CTA、DE/FR 语言开关。
-3. **Hero Section**: 品牌巨幕、高清实景主图、评分 Badge、双按钮 CTA (在线预订 & 电话联系)。
-4. **Highlights & Trust Badges**: 4 大本地核心优势（如 100% Natursauerteig / 24/7 Notfallservice / Swiss Dental Standard）。
-5. **Services / Menu / Price List**: 富媒体列表（带图标、价格 CHF、服务描述与推荐标签）。
-6. **Photo Gallery**: 高清实景展厅/特色展示画廊。
-7. **Reviews & Testimonials**: 真实客户评价卡片与 Google 评分。
-8. **Contact & Inquiry Form**: 交互式联系表单、详细地址、电话与营业时间表。
-
----
-
-## ⚙️ 四、 技术与数据对接要求 (Data & SSR Standard)
-
-1. **Neon PostgreSQL 直连数据**：商家名称、评分、评价数、城市、电话、地址等信息必须直连数据库。
-2. **零 307/500 重定向异常**：使用 Next.js Client & Server Components 混合架构，确保 100% 响应 `200 OK`。
+1. **0 占位符原则**：全站必须嵌入高分辨率 Unsplash 真实商业大图。
+2. **100% 200 OK 响应**：SSR + CSR 混合架构，无 307 或 500 重定向异常。

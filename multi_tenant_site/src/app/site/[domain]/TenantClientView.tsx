@@ -21,7 +21,9 @@ import {
   Croissant,
   Languages,
   Check,
-  Image as ImageIcon
+  ChevronRight,
+  ShieldAlert,
+  Sparkle
 } from 'lucide-react';
 
 interface TenantProps {
@@ -47,502 +49,511 @@ export default function DynamicTenantView({
   rating,
   reviewCount
 }: TenantProps) {
-  // 默认语言 de (德语) / 可以在客户端无缝切换为 fr (法语)
   const [lang, setLang] = useState<'de' | 'fr'>('de');
   const [formSubmitted, setFormSubmitted] = useState(false);
 
-  const t = {
-    de: {
-      topBanner: `Traditionelle Schweizer Qualität & Exzellenz in ${city} (${canton})`,
-      aboutUs: 'Über Uns',
-      services: 'Leistungen & Angebot',
-      gallery: 'Impressionen',
-      contact: 'Kontakt & Anfahrt',
-      callNow: 'Jetzt Anrufen',
-      bookTermin: 'Termin vereinbaren',
-      certified: `Zertifizierter Fachbetrieb · ${city}`,
-      verifiedReviews: 'verifizierte Bewertungen',
-      ratingText: 'Google Bewertung',
-      quickInquiry: 'Unverbindliche Anfrage',
-      yourName: 'Ihr Name',
-      phoneEmail: 'Telefon / E-Mail',
-      message: 'Ihre Nachricht',
-      sendBtn: 'Anfrage Absenden',
-      submittedMsg: 'Vielen Dank! Ihre Anfrage wurde erfolgreich übermittelt.',
-      hoursTitle: 'Öffnungszeiten',
-      weekdays: 'Montag - Freitag',
-      saturday: 'Samstag',
-      sunday: 'Sonntag',
-      closed: 'Geschlossen',
-      allRights: 'Alle Rechte vorbehalten. Impressum & Datenschutz',
-      // Bakery
-      bakerySub: 'Handgemachte Schweizer Bäckerei & Konditorei',
-      bakeryHeroHeadline: 'Täglich frisch gebrüht & aus dem Ofen',
-      bakeryHeroDesc: `Erleben Sie knusprige Gipfeli, traditionellen Sauerteig und feine Pâtisserie. Täglich frisch zubereitet mit besten Zutaten aus der Region ${city}.`,
-      // Coiffeur
-      beautySub: 'Premium Hair Styling & Beauty Salon',
-      beautyHeroHeadline: 'Schönheit, Elegance & Perfektes Styling',
-      beautyHeroDesc: `Ihr exklusiver Salon für individuelle Haarschnitte, Balayage, Styling und intensive Pflege in entspannter Atmosphäre in ${city}.`,
-      // Dentist
-      dentistSub: 'Schweizer Zahnmedizin & Schonende Behandlungen',
-      dentistHeroHeadline: 'Gesunde Zähne & Ein Strahlendes Lächeln',
-      dentistHeroDesc: `Moderne Zahnheilkunde, Prophylaxe, Zahnreinigung und Ästhetik. Wir garantieren schmerzfreie Behandlungen nach höchsten Schweizer Qualitätsstandards.`,
-      // Sanitär
-      tradeSub: '24/7 Sanitär, Heizung & Reparaturservice',
-      tradeHeroHeadline: 'Meisterhafte Qualität & Schnelle Notfallhilfe',
-      tradeHeroDesc: `Ihr zuverlässiger Fachbetrieb in ${city}. Von der Badsanierung bis zum Rohrbruch – wir sind rund um die Uhr schnell vor Ort.`,
-      // Café
-      cafeSub: 'Barista Kaffee & Kulinarischer Genuss',
-      cafeHeroHeadline: 'Herzliche Gastfreundschaft & Feine Speisen',
-      cafeHeroDesc: `Genießen Sie erstklassigen Kaffee, hausgemachte Speisen und angenehme Stunden in gemütlichem Ambiente mitten in ${city}.`,
-    },
-    fr: {
-      topBanner: `Qualité suisse traditionnelle & Excellence à ${city} (${canton})`,
-      aboutUs: 'À Propos',
-      services: 'Services & Prestations',
-      gallery: 'Galerie Photos',
-      contact: 'Contact & Accès',
-      callNow: 'Appeler Maintenant',
-      bookTermin: 'Prendre Rendez-vous',
-      certified: `Entreprise Certifiée · ${city}`,
-      verifiedReviews: 'avis clients vérifiés',
-      ratingText: 'Note Google',
-      quickInquiry: 'Demande Sans Engagement',
-      yourName: 'Votre Nom',
-      phoneEmail: 'Téléphone / E-mail',
-      message: 'Votre Message',
-      sendBtn: 'Envoyer la Demande',
-      submittedMsg: 'Merci beaucoup! Votre message a été transmis avec succès.',
-      hoursTitle: 'Heures d\'Ouverture',
-      weekdays: 'Lundi - Vendredi',
-      saturday: 'Samedi',
-      sunday: 'Dimanche',
-      closed: 'Fermé',
-      allRights: 'Tous droits réservés. Mentions légales & Confidentialité',
-      // Bakery
-      bakerySub: 'Boulangerie & Pâtisserie Artisanale Suisse',
-      bakeryHeroHeadline: 'Frais chaque jour, directement du four',
-      bakeryHeroDesc: `Découvrez nos croissants croustillants, pains au levain traditionnels et délicieuses pâtisseries préparées à ${city}.`,
-      // Coiffeur
-      beautySub: 'Salon de Coiffure & Beauté Haut de Gamme',
-      beautyHeroHeadline: 'Beauté, Élégance & Coiffure Sur-Mesure',
-      beautyHeroDesc: `Votre salon exclusif pour coupes personnalisées, balayages et soins capillaires intenses à ${city}.`,
-      // Dentist
-      dentistSub: 'Médecine Dentaire Suisse & Soins Doux',
-      dentistHeroHeadline: 'Des Dents Saines & Un Sourire Éclatant',
-      dentistHeroDesc: `Soins dentaires modernes, hygiène et esthétique. Nous garantissons des traitements sans douleur selon les normes suisses.`,
-      // Sanitär
-      tradeSub: 'Dépannage Sanitaire & Chauffage 24/7',
-      tradeHeroHeadline: 'Qualité Artisanale & Intervention Rapide',
-      tradeHeroDesc: `Votre partenaire fiable à ${city}. Rénovation de salle de bain ou urgence fuite d'eau – nous intervenons 24/7.`,
-      // Café
-      cafeSub: 'Café Barista & Plaisirs Gastronomiques',
-      cafeHeroHeadline: 'Hospitalité Chaleureuse & Cuisine Savoureuse',
-      cafeHeroDesc: `Dégustez un café d'exception, des mets faits maison et passez un moment agréable au cœur de ${city}.`,
-    }
-  };
-
-  const curr = t[lang];
-
-  // 图片资源集
+  // 图像资源集
   const images = {
     bakery: {
       hero: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=80',
-      g1: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80',
-      g2: 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?auto=format&fit=crop&w=600&q=80',
+      p1: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80',
+      p2: 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?auto=format&fit=crop&w=600&q=80',
+      p3: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80',
     },
     hair_salon: {
       hero: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80',
-      g1: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80',
-      g2: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=600&q=80',
+      p1: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80',
+      p2: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=600&q=80',
+      p3: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=600&q=80',
     },
     dentist: {
       hero: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1200&q=80',
-      g1: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=600&q=80',
-      g2: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&w=600&q=80',
+      p1: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=600&q=80',
+      p2: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&w=600&q=80',
+      p3: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&w=600&q=80',
     },
     sanitaer: {
       hero: 'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?auto=format&fit=crop&w=1200&q=80',
-      g1: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80',
-      g2: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
+      p1: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80',
+      p2: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
+      p3: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
     },
     cafe: {
       hero: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=80',
-      g1: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80',
-      g2: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80',
+      p1: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=600&q=80',
+      p2: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80',
+      p3: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80',
     }
   };
 
   const imgSet = images[category as keyof typeof images] || images.cafe;
-
-  const themeClasses = {
-    bakery: {
-      bg: 'bg-stone-950 text-amber-50',
-      headerBorder: 'border-amber-900/40',
-      accentBg: 'bg-amber-500 hover:bg-amber-400 text-stone-950',
-      gradientText: 'from-amber-200 via-amber-400 to-yellow-500',
-      cardBg: 'bg-stone-900/80 border-amber-900/40',
-      subText: 'text-amber-400',
-      icon: <Croissant className="w-5 h-5 text-amber-400" />
-    },
-    hair_salon: {
-      bg: 'bg-zinc-950 text-zinc-100',
-      headerBorder: 'border-rose-900/30',
-      accentBg: 'bg-rose-500 hover:bg-rose-400 text-zinc-950',
-      gradientText: 'from-rose-200 via-pink-300 to-amber-200',
-      cardBg: 'bg-zinc-900/90 border-rose-900/30',
-      subText: 'text-rose-400',
-      icon: <Scissors className="w-5 h-5 text-rose-400" />
-    },
-    dentist: {
-      bg: 'bg-slate-950 text-slate-100',
-      headerBorder: 'border-cyan-900/40',
-      accentBg: 'bg-cyan-500 hover:bg-cyan-400 text-slate-950',
-      gradientText: 'from-cyan-300 via-teal-300 to-sky-400',
-      cardBg: 'bg-slate-900/90 border-cyan-900/40',
-      subText: 'text-cyan-400',
-      icon: <Stethoscope className="w-5 h-5 text-cyan-400" />
-    },
-    sanitaer: {
-      bg: 'bg-slate-950 text-slate-100',
-      headerBorder: 'border-slate-800',
-      accentBg: 'bg-orange-500 hover:bg-orange-400 text-slate-950',
-      gradientText: 'from-orange-400 via-amber-400 to-yellow-400',
-      cardBg: 'bg-slate-900 border-slate-800',
-      subText: 'text-orange-400',
-      icon: <Wrench className="w-5 h-5 text-orange-400" />
-    },
-    cafe: {
-      bg: 'bg-stone-950 text-stone-100',
-      headerBorder: 'border-stone-800',
-      accentBg: 'bg-amber-500 hover:bg-amber-400 text-stone-950',
-      gradientText: 'from-amber-200 via-amber-400 to-amber-500',
-      cardBg: 'bg-stone-900/90 border-stone-800',
-      subText: 'text-amber-400',
-      icon: <Coffee className="w-5 h-5 text-amber-400" />
-    }
-  };
-
-  const style = themeClasses[category as keyof typeof themeClasses] || themeClasses.cafe;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormSubmitted(true);
   };
 
-  return (
-    <div className={`min-h-screen ${style.bg} font-sans selection:bg-amber-500 selection:text-stone-950`}>
-      {/* ── Top Bar with Language Switcher DE / FR ────────────────── */}
-      <div className="bg-stone-900 border-b border-stone-800 text-xs py-2 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-stone-300 font-medium">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>{curr.topBanner}</span>
+  // ── 通用语言工具控制 ──────────────────────────────────────
+  const renderLangBtn = () => (
+    <div className="flex items-center gap-1.5 bg-stone-950 px-2.5 py-1 rounded-full border border-stone-800 shadow-inner">
+      <Languages className="w-3.5 h-3.5 text-stone-400" />
+      <button
+        onClick={() => setLang('de')}
+        className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+          lang === 'de' ? 'bg-amber-500 text-stone-950 shadow' : 'text-stone-400 hover:text-stone-200'
+        }`}
+      >
+        DE
+      </button>
+      <span className="text-stone-700">|</span>
+      <button
+        onClick={() => setLang('fr')}
+        className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+          lang === 'fr' ? 'bg-amber-500 text-stone-950 shadow' : 'text-stone-400 hover:text-stone-200'
+        }`}
+      >
+        FR
+      </button>
+    </div>
+  );
+
+  // =========================================================================
+  // 🥐 布局 1：BÄCKEREI (烘焙店) — 温馨暖麦手工拆分版式 (Warm Bakery Layout)
+  // =========================================================================
+  if (category === 'bakery') {
+    return (
+      <div className="min-h-screen bg-[#1c1815] text-[#f7f2ea] font-sans selection:bg-amber-500 selection:text-stone-950">
+        {/* Top bar */}
+        <div className="bg-[#2a241f] border-b border-amber-900/30 py-2 px-6 flex items-center justify-between text-xs text-amber-200/80">
+          <div className="flex items-center gap-2">
+            <Croissant className="w-4 h-4 text-amber-400" />
+            <span>{lang === 'de' ? `Traditionelle Handwerksbäckerei in ${city} (Kanton ${canton})` : `Boulangerie artisanale traditionnelle à ${city}`}</span>
+          </div>
+          {renderLangBtn()}
         </div>
 
-        {/* 语言切换工具栏 DE / FR */}
-        <div className="flex items-center gap-1.5 bg-stone-950 px-2.5 py-1 rounded-full border border-stone-800">
-          <Languages className="w-3.5 h-3.5 text-stone-400" />
-          <button
-            onClick={() => setLang('de')}
-            className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all ${
-              lang === 'de' ? 'bg-amber-500 text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            DE (Deutsch)
-          </button>
-          <span className="text-stone-700">|</span>
-          <button
-            onClick={() => setLang('fr')}
-            className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all ${
-              lang === 'fr' ? 'bg-amber-500 text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            FR (Français)
-          </button>
-        </div>
-      </div>
-
-      {/* ── Header ────────────────────────────────────────────── */}
-      <header className={`border-b ${style.headerBorder} bg-stone-950/90 backdrop-blur-md sticky top-0 z-40`}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-stone-950 font-serif text-2xl font-black flex items-center justify-center shadow-lg shadow-amber-500/20">
-              {name.charAt(0)}
+        {/* Header */}
+        <header className="border-b border-amber-900/30 bg-[#1c1815]/90 backdrop-blur sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 text-stone-950 font-serif font-black text-xl flex items-center justify-center">
+                {name.charAt(0)}
+              </div>
+              <span className="font-serif text-2xl font-bold tracking-tight text-amber-100">{name}</span>
             </div>
-            <div>
-              <h1 className="font-serif text-xl font-bold tracking-tight text-white">{name}</h1>
-              <div className="flex items-center gap-2 text-xs font-medium">
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span className={style.subText}>{curr.certified}</span>
+            <a href={`tel:${phone}`} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm rounded-full transition shadow-lg flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              <span>{phone}</span>
+            </a>
+          </div>
+        </header>
+
+        {/* Hero: Split Counter & Warm Bakery Layout */}
+        <section className="py-16 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <div className="inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 text-xs font-semibold">
+              🌾 {lang === 'de' ? '100% Schweizer Mehl & Natursauerteig' : '100% Farine Suisse & Levain Naturel'}
+            </div>
+            <h1 className="text-4xl sm:text-6xl font-serif font-extrabold text-amber-50 leading-tight">
+              {lang === 'de' ? 'Knuspriges Brot & Duftende Gipfeli' : 'Pain Croustillant & Croissants Parfumés'}
+            </h1>
+            <p className="text-lg text-amber-200/70 font-light leading-relaxed">
+              {lang === 'de' ? `Seit Jahren Ihr vertrauter Bäcker in ${city}. Wir backen täglich ab 05:30 Uhr frisch für Ihren perfekten Start in den Tag.` : `Votre boulanger de confiance à ${city}. Cuisson quotidienne dès 05h30 pour un réveil gourmand.`}
+            </p>
+            <div className="p-4 bg-[#26201b] rounded-2xl border border-amber-900/40 flex items-center gap-4">
+              <Star className="w-8 h-8 fill-amber-400 text-amber-400 shrink-0" />
+              <div>
+                <div className="font-bold text-amber-200 text-base">{rating} / 5.0 Google Bewertung ({reviewCount} Rezensionen)</div>
+                <div className="text-xs text-amber-200/60">{lang === 'de' ? 'Von Kundinnen und Kunden in der Region ausgezeichnet' : 'Recommandé par nos clients régionaux'}</div>
               </div>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-stone-300">
-            <a href="#about" className="hover:text-amber-400 transition-colors">{curr.aboutUs}</a>
-            <a href="#services" className="hover:text-amber-400 transition-colors">{curr.services}</a>
-            <a href="#gallery" className="hover:text-amber-400 transition-colors">{curr.gallery}</a>
-            <a href="#contact" className="hover:text-amber-400 transition-colors">{curr.contact}</a>
-          </nav>
+          <div className="relative rounded-3xl overflow-hidden border-2 border-amber-900/40 shadow-2xl">
+            <img src={imgSet.hero} alt="Bakery Hero" className="w-full h-[420px] object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1c1815] via-transparent to-transparent"></div>
+            <div className="absolute bottom-6 left-6 right-6 p-4 bg-[#1c1815]/90 rounded-2xl border border-amber-900/40">
+              <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">Frische Garantie</p>
+              <p className="text-sm text-amber-100 font-serif mt-1">{lang === 'de' ? 'Täglich frisch aus dem Steinbackofen' : 'Frais du four chaque matin'}</p>
+            </div>
+          </div>
+        </section>
 
-          <a
-            href={`tel:${phone}`}
-            className={`px-5 py-2.5 ${style.accentBg} font-bold text-sm rounded-xl transition-all shadow-lg flex items-center gap-2`}
-          >
-            <Phone className="w-4 h-4" />
-            <span>{curr.callNow}</span>
+        {/* Feature Bakery Cards Layout */}
+        <section className="py-16 bg-[#241f1a] border-t border-amber-900/30">
+          <div className="max-w-7xl mx-auto px-6 space-y-10">
+            <h2 className="text-3xl font-serif font-bold text-amber-100 text-center">{lang === 'de' ? 'Unsere Spezialitäten' : 'Nos Spécialités'}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-[#1c1815] p-6 rounded-3xl border border-amber-900/30 space-y-4">
+                <img src={imgSet.p1} className="w-full h-48 object-cover rounded-2xl" alt="Croissants" />
+                <h3 className="text-xl font-serif font-bold text-amber-200">{lang === 'de' ? 'Schweizer Buttergipfeli' : 'Croissants au Beurre Suisse'}</h3>
+                <p className="text-sm text-amber-200/60">{lang === 'de' ? 'Goldgelb gebacken mit echter Schweizer Butter.' : 'Dorés au four avec du beurre suisse pur.'}</p>
+              </div>
+              <div className="bg-[#1c1815] p-6 rounded-3xl border border-amber-900/30 space-y-4">
+                <img src={imgSet.p2} className="w-full h-48 object-cover rounded-2xl" alt="Pâtisserie" />
+                <h3 className="text-xl font-serif font-bold text-amber-200">{lang === 'de' ? 'Feine Pâtisserie' : 'Pâtisserie Fine'}</h3>
+                <p className="text-sm text-amber-200/60">{lang === 'de' ? 'Fruchttörtchen und Tormes für besondere Anlässe.' : 'Tartelettes aux fruits et créations sur-mesure.'}</p>
+              </div>
+              <div className="bg-[#1c1815] p-6 rounded-3xl border border-amber-900/30 space-y-4">
+                <img src={imgSet.p3} className="w-full h-48 object-cover rounded-2xl" alt="Brot" />
+                <h3 className="text-xl font-serif font-bold text-amber-200">{lang === 'de' ? 'Urdinkel- & Sauerteigbrot' : 'Pain au Levain & Épeautre'}</h3>
+                <p className="text-sm text-amber-200/60">{lang === 'de' ? 'Lange Teigruhe für bekömmlichen Genuss.' : 'Fermentation lente pour une digestion optimale.'}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Contact */}
+        <section className="py-16 max-w-5xl mx-auto px-6 space-y-8">
+          <div className="bg-[#26201b] p-8 rounded-3xl border border-amber-900/40 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h3 className="text-2xl font-serif font-bold text-amber-100">{lang === 'de' ? 'Standort & Kontakt' : 'Adresse & Contact'}</h3>
+              <p className="text-sm text-amber-200/70">{address}</p>
+              <p className="text-sm text-amber-200/70">Tel: {phone}</p>
+              <p className="text-sm text-amber-200/70">E-Mail: {email}</p>
+            </div>
+            <div className="space-y-3 bg-[#1c1815] p-6 rounded-2xl border border-amber-900/30">
+              <h4 className="font-bold text-amber-300 text-sm">{lang === 'de' ? 'Öffnungszeiten' : 'Heures d\'ouverture'}</h4>
+              <div className="text-xs text-amber-200/70 space-y-1">
+                <div>Mo - Fr: 05:30 - 18:30 Uhr</div>
+                <div>Sa: 06:00 - 16:00 Uhr</div>
+                <div>So: 07:00 - 13:00 Uhr</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // ✂️ 布局 2：COIFFEUR / BEAUTY — 时尚奢华杂志感版式 (Editorial Magazine Layout)
+  // =========================================================================
+  if (category === 'hair_salon') {
+    return (
+      <div className="min-h-screen bg-[#0d0d0e] text-[#f4f4f6] font-sans selection:bg-rose-500 selection:text-zinc-950">
+        {/* Top bar */}
+        <div className="bg-[#171719] border-b border-rose-900/20 py-2 px-6 flex items-center justify-between text-xs text-zinc-400">
+          <div className="flex items-center gap-2">
+            <Scissors className="w-3.5 h-3.5 text-rose-400" />
+            <span className="tracking-widest uppercase text-[11px]">{lang === 'de' ? `HAARSTYLING & BEAUTY SALON · ${city.toUpperCase()}` : `SALON DE COIFFURE HAUT DE GAMME · ${city.toUpperCase()}`}</span>
+          </div>
+          {renderLangBtn()}
+        </div>
+
+        {/* Header */}
+        <header className="border-b border-rose-900/20 bg-[#0d0d0e]/90 backdrop-blur sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <h1 className="font-serif text-2xl tracking-widest uppercase font-light text-rose-100">{name}</h1>
+            <a href={`tel:${phone}`} className="px-6 py-2.5 bg-rose-500 hover:bg-rose-400 text-zinc-950 font-bold text-xs uppercase tracking-wider rounded-full transition shadow-lg shadow-rose-500/20">
+              {lang === 'de' ? 'Termin Vereinbaren' : 'Rendez-vous'}
+            </a>
+          </div>
+        </header>
+
+        {/* Hero: Editorial Centered Magazine Layout */}
+        <section className="py-24 px-6 max-w-4xl mx-auto text-center space-y-8">
+          <div className="inline-block px-4 py-1.5 rounded-full border border-rose-500/30 text-rose-300 text-xs tracking-widest uppercase">
+            ✦ Haute Coiffure Switzerland ✦
+          </div>
+          <h2 className="text-5xl sm:text-7xl font-serif font-extralight text-zinc-100 tracking-tight leading-none">
+            {lang === 'de' ? 'Eleganz & Typgerechtes Styling' : 'Élégance & Coiffure Sur-Mesure'}
+          </h2>
+          <p className="text-base sm:text-lg text-zinc-400 font-light max-w-xl mx-auto leading-relaxed">
+            {lang === 'de' ? `Willkommen bei ${name} in ${city}. Wir kreieren individuelle Looks, edle Balayage-Farbtöne und intensive Haartherapien.` : `Bienvenue chez ${name} à ${city}. Nous créons des looks uniques, des balayages raffinés et des soins d'exception.`}
+          </p>
+        </section>
+
+        {/* Full-width High Fashion Image */}
+        <div className="max-w-6xl mx-auto px-6 pb-16">
+          <div className="relative rounded-3xl overflow-hidden border border-rose-900/30 shadow-2xl h-[480px]">
+            <img src={imgSet.hero} alt="Salon" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0e] via-transparent to-transparent"></div>
+            <div className="absolute bottom-8 left-8">
+              <span className="text-xs uppercase tracking-widest text-rose-300">Google Rating</span>
+              <p className="text-3xl font-serif font-bold text-white mt-1">{rating} ★ ({reviewCount} {lang === 'de' ? 'Bewertungen' : 'avis'})</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Price list & Services Cards */}
+        <section className="py-16 bg-[#131315] border-t border-b border-rose-900/20">
+          <div className="max-w-6xl mx-auto px-6 space-y-12">
+            <h3 className="text-3xl font-serif text-center font-light text-rose-100 tracking-wide uppercase">{lang === 'de' ? 'Unsere Services & Price List' : 'Nos Services & Tarifs'}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="p-8 bg-[#18181b] rounded-3xl border border-rose-900/20 space-y-4">
+                <h4 className="text-xl font-serif text-rose-200">{lang === 'de' ? 'Damen Cut & Style' : 'Coupe & Coiffage Femme'}</h4>
+                <p className="text-xs text-zinc-400">{lang === 'de' ? 'Waschen, Verwöhn-Kopfmassage, Schnitt & Brushing.' : 'Shampooing, massage du cuir chevelu, coupe & brushing.'}</p>
+                <div className="text-sm font-mono text-rose-300 font-bold">ab CHF 85.-</div>
+              </div>
+              <div className="p-8 bg-[#18181b] rounded-3xl border border-rose-900/20 space-y-4">
+                <h4 className="text-xl font-serif text-rose-200">{lang === 'de' ? 'Balayage & Painting' : 'Balayage & Glossing'}</h4>
+                <p className="text-xs text-zinc-400">{lang === 'de' ? 'Sanfte Farbverläufe mit Glanzversiegelung.' : 'Technique de coloration douce et brillance intense.'}</p>
+                <div className="text-sm font-mono text-rose-300 font-bold">ab CHF 160.-</div>
+              </div>
+              <div className="p-8 bg-[#18181b] rounded-3xl border border-rose-900/20 space-y-4">
+                <h4 className="text-xl font-serif text-rose-200">{lang === 'de' ? 'Herren Styling' : 'Coupe Homme Premium'}</h4>
+                <p className="text-xs text-zinc-400">{lang === 'de' ? 'Präzisionshaarschnitt & Konturenpflege.' : 'Coupe de précision et soin des contours.'}</p>
+                <div className="text-sm font-mono text-rose-300 font-bold">ab CHF 55.-</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="py-12 text-center text-xs text-zinc-500 space-y-2">
+          <p className="font-serif text-base text-rose-200">{name} · {address}</p>
+          <p>Telefon: {phone}</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 🦷 布局 3：ZAHNARZT (牙科诊所) — 瑞士无瑕医疗极简版式 (Swiss Medical Precision Layout)
+  // =========================================================================
+  if (category === 'dentist') {
+    return (
+      <div className="min-h-screen bg-[#0b131e] text-[#e2e8f0] font-sans selection:bg-cyan-500 selection:text-slate-950">
+        {/* Top bar */}
+        <div className="bg-[#131f30] border-b border-cyan-900/40 py-2.5 px-6 flex items-center justify-between text-xs text-cyan-300">
+          <div className="flex items-center gap-2">
+            <Stethoscope className="w-4 h-4 text-cyan-400" />
+            <span className="font-semibold">{lang === 'de' ? `Zahnarztpraxis in ${city} · Swiss Quality Standard` : `Cabinet Dentaire à ${city} · Qualité Suisse`}</span>
+          </div>
+          {renderLangBtn()}
+        </div>
+
+        {/* Header */}
+        <header className="border-b border-cyan-900/40 bg-[#0b131e]/90 backdrop-blur sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 font-bold text-2xl flex items-center justify-center">
+                +
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">{name}</h1>
+                <p className="text-xs text-cyan-400">{lang === 'de' ? 'Schweizer Zahnmedizin' : 'Médecine Dentaire Suisse'}</p>
+              </div>
+            </div>
+            <a href={`tel:${phone}`} className="px-5 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl transition shadow-lg shadow-cyan-500/20">
+              {lang === 'de' ? 'Notfall & Termin' : 'Urgence & Rendez-vous'}
+            </a>
+          </div>
+        </header>
+
+        {/* Hero: Clinical Precision & Emergency Callouts */}
+        <section className="py-16 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-300 text-xs font-semibold">
+              <ShieldCheck className="w-4 h-4 text-cyan-400" />
+              <span>{lang === 'de' ? 'Schmerzfreie Behandlungen & Prophylaxe' : 'Soins Sans Douleur & Prophylaxie'}</span>
+            </div>
+            <h2 className="text-4xl sm:text-6xl font-extrabold text-white leading-tight">
+              {lang === 'de' ? 'Ihr Vertrauensvolles Lächeln in ' : 'Votre Sourire Eclatant à '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-sky-400">{city}</span>
+            </h2>
+            <p className="text-base sm:text-lg text-slate-300 font-light leading-relaxed">
+              {lang === 'de' ? `Moderne Zahnheilkunde für die ganze Familie. Wir garantieren schonende Behandlungen mit neuester Schweizer Technologie.` : `Soins dentaires modernes pour toute la famille. Traitements doux avec les dernières technologies suisses.`}
+            </p>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="p-4 bg-[#111d2e] rounded-xl border border-cyan-900/40">
+                <div className="text-2xl font-bold text-cyan-300">{rating} ★</div>
+                <div className="text-xs text-slate-400 mt-1">{reviewCount} {lang === 'de' ? 'Patientenbewertungen' : 'avis patients'}</div>
+              </div>
+              <div className="p-4 bg-[#111d2e] rounded-xl border border-cyan-900/40">
+                <div className="text-2xl font-bold text-cyan-300">100%</div>
+                <div className="text-xs text-slate-400 mt-1">{lang === 'de' ? 'Sanfte Behandlung' : 'Soins Doux'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 relative rounded-3xl overflow-hidden border border-cyan-900/40 shadow-2xl">
+            <img src={imgSet.hero} alt="Dentist Practice" className="w-full h-[400px] object-cover" />
+          </div>
+        </section>
+
+        {/* 4 Specialties Cards */}
+        <section className="py-16 bg-[#0e1826] border-t border-b border-cyan-900/30">
+          <div className="max-w-7xl mx-auto px-6 space-y-10">
+            <h3 className="text-2xl font-bold text-white text-center">{lang === 'de' ? 'Unsere Behandlungsbereiche' : 'Nos Domaines d\'Intervention'}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="p-6 bg-[#132135] rounded-2xl border border-cyan-900/40 space-y-2">
+                <h4 className="font-bold text-white text-lg">{lang === 'de' ? 'Zahnreinigung' : 'Nettoyage Dentaire'}</h4>
+                <p className="text-xs text-slate-400">{lang === 'de' ? 'Professionelle Prophylaxe für gesunde Zähne.' : 'Prophylaxie professionnelle pour des dents saines.'}</p>
+              </div>
+              <div className="p-6 bg-[#132135] rounded-2xl border border-cyan-900/40 space-y-2">
+                <h4 className="font-bold text-white text-lg">{lang === 'de' ? 'Ästhetik & Bleaching' : 'Blanchiment Dentaire'}</h4>
+                <p className="text-xs text-slate-400">{lang === 'de' ? 'Strahlend weiße Zähne ohne Schmelzschaden.' : 'Dents blanches sans altérer l\'émail.'}</p>
+              </div>
+              <div className="p-6 bg-[#132135] rounded-2xl border border-cyan-900/40 space-y-2">
+                <h4 className="font-bold text-white text-lg">{lang === 'de' ? 'Implantologie' : 'Implantologie'}</h4>
+                <p className="text-xs text-slate-400">{lang === 'de' ? 'Langlebige Zahnimplantate bester Qualität.' : 'Implants dentaires durables de haute qualité.'}</p>
+              </div>
+              <div className="p-6 bg-[#132135] rounded-2xl border border-cyan-900/40 space-y-2">
+                <h4 className="font-bold text-white text-lg">{lang === 'de' ? 'Notfall-Service' : 'Service d\'Urgence'}</h4>
+                <p className="text-xs text-slate-400">{lang === 'de' ? 'Bei Zahnschmerzen sofortige Hilfe.' : 'Prise en charge rapide en cas de douleur.'}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="py-12 text-center text-xs text-slate-500">
+          <p>{name} · {address} · Tel: {phone}</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 🛠️ 布局 4：SANITÄR / TRADE — 24/7 工业应急重载版式 (Industrial Heavy Action Layout)
+  // =========================================================================
+  if (category === 'sanitaer' || category === 'repair') {
+    return (
+      <div className="min-h-screen bg-[#0f172a] text-[#f8fafc] font-sans selection:bg-orange-500 selection:text-slate-950">
+        {/* Action 24/7 Bar */}
+        <div className="bg-orange-600 text-slate-950 font-bold text-xs py-2 px-6 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 animate-bounce" />
+            <span>{lang === 'de' ? `24/7 SANITÄR & HEIZUNG NOTFALLSERVICE IN ${city.toUpperCase()}` : `DÉPANNAGE SANITAIRE 24H/24 À ${city.toUpperCase()}`}</span>
+          </div>
+          {renderLangBtn()}
+        </div>
+
+        {/* Header */}
+        <header className="border-b border-slate-800 bg-[#0f172a]/95 backdrop-blur sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500 text-slate-950 font-bold text-xl flex items-center justify-center">
+                <Wrench className="w-6 h-6" />
+              </div>
+              <span className="font-bold text-xl text-white">{name}</span>
+            </div>
+            <a href={`tel:${phone}`} className="px-6 py-3 bg-orange-500 hover:bg-orange-400 text-slate-950 font-black text-sm rounded-xl transition shadow-lg shadow-orange-500/20 flex items-center gap-2">
+              <Phone className="w-4 h-4 fill-slate-950" />
+              <span>{phone}</span>
+            </a>
+          </div>
+        </header>
+
+        {/* Hero: Action Emergency & Fast Dispatch */}
+        <section className="py-16 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-block px-3 py-1 bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-xs rounded-lg uppercase">
+              ⚡ {lang === 'de' ? 'Sofort-Anfahrt bei Wasserschaden & Heizungsausfall' : 'Intervention Immédiate en Cas de Fuite d\'Eau'}
+            </div>
+            <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight">
+              {lang === 'de' ? 'Schnell, Sauber & Fair Vor Ort in ' : 'Dépannage Rapide & Propre à '}
+              <span className="text-orange-400">{city}</span>
+            </h1>
+            <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-light">
+              {lang === 'de' ? `Ihr zertifizierter Meisterbetrieb für Sanitärinstallationen, Rohrsanierung und Heizungsservice. Transparentes Festpreis-Versprechen.` : `Votre artisan plombier certifié pour fuites d'eau, débouchage et chauffage.`}
+            </p>
+            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-white">{lang === 'de' ? 'Durchschnittliche Anfahrtszeit' : 'Temps d\'intervention moyen'}</div>
+                <div className="text-xs text-slate-400">{lang === 'de' ? 'In der gesamten Region' : 'Dans toute la région'} {city}</div>
+              </div>
+              <div className="text-2xl font-black text-orange-400 font-mono">30 MIN</div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl">
+            <img src={imgSet.hero} alt="Sanitär Service" className="w-full h-[380px] object-cover" />
+          </div>
+        </section>
+
+        {/* 3 Step Action Grid */}
+        <section className="py-16 bg-slate-900 border-t border-b border-slate-800">
+          <div className="max-w-7xl mx-auto px-6 space-y-10">
+            <h3 className="text-2xl font-bold text-center text-white">{lang === 'de' ? 'In 3 Schritten zu Ihrer Lösung' : 'Votre Problème Résolu en 3 Étapes'}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+                <div className="w-8 h-8 rounded-full bg-orange-500 text-slate-950 font-bold flex items-center justify-center text-sm">1</div>
+                <h4 className="font-bold text-white text-lg">{lang === 'de' ? 'Anrufen' : 'Appeler'}</h4>
+                <p className="text-xs text-slate-400">{lang === 'de' ? 'Schildern Sie uns Ihr Problem am Telefon.' : 'Décrivez-nous votre problème par téléphone.'}</p>
+              </div>
+              <div className="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+                <div className="w-8 h-8 rounded-full bg-orange-500 text-slate-950 font-bold flex items-center justify-center text-sm">2</div>
+                <h4 className="font-bold text-white text-lg">{lang === 'de' ? 'Sofortige Anfahrt' : 'Déplacement Rapide'}</h4>
+                <p className="text-xs text-slate-400">{lang === 'de' ? 'Unser Fachmann kommt direkt zu Ihnen.' : 'Notre technicien se rend sur place.'}</p>
+              </div>
+              <div className="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+                <div className="w-8 h-8 rounded-full bg-orange-500 text-slate-950 font-bold flex items-center justify-center text-sm">3</div>
+                <h4 className="font-bold text-white text-lg">{lang === 'de' ? 'Erfolgreiche Reparatur' : 'Réparation Réussie'}</h4>
+                <p className="text-xs text-slate-400">{lang === 'de' ? 'Saubere Arbeit zum fairen Festpreis.' : 'Travail propre au tarif convenu.'}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="py-12 text-center text-xs text-slate-500">
+          <p>{name} · {address} · Notfall-Tel: {phone}</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // ☕️ 布局 5：CAFÉ / RESTAURANT — 意式暗调餐馆 Bistrot 版式 (Dark Bistrot Layout)
+  // =========================================================================
+  return (
+    <div className="min-h-screen bg-[#14110f] text-[#f2ece4] font-sans selection:bg-amber-500 selection:text-stone-950">
+      {/* Top bar */}
+      <div className="bg-[#1e1916] border-b border-amber-900/30 py-2 px-6 flex items-center justify-between text-xs text-amber-200/70">
+        <div className="flex items-center gap-2">
+          <Coffee className="w-4 h-4 text-amber-400" />
+          <span>{lang === 'de' ? `Café & Bistrot in ${city} (${canton})` : `Café & Bistrot à ${city}`}</span>
+        </div>
+        {renderLangBtn()}
+      </div>
+
+      {/* Header */}
+      <header className="border-b border-amber-900/30 bg-[#14110f]/90 backdrop-blur sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <h1 className="font-serif text-2xl font-bold tracking-wider text-amber-100">{name}</h1>
+          <a href={`tel:${phone}`} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg">
+            {lang === 'de' ? 'Tisch Reservieren' : 'Réserver'}
           </a>
         </div>
       </header>
 
-      {/* ── Hero Section ──────────────────────────────────────── */}
-      <section className="relative py-20 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        <div className="lg:col-span-7 space-y-8 text-left">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-stone-900 border border-stone-800 text-amber-400 text-xs font-semibold">
-            {style.icon}
-            <span>{category === 'bakery' ? curr.bakerySub : category === 'hair_salon' ? curr.beautySub : category === 'dentist' ? curr.dentistSub : category === 'sanitaer' ? curr.tradeSub : curr.cafeSub}</span>
-          </div>
-
-          <h2 className="text-4xl sm:text-6xl font-serif font-black tracking-tight leading-tight text-white">
-            {category === 'bakery' ? curr.bakeryHeroHeadline : category === 'hair_salon' ? curr.beautyHeroHeadline : category === 'dentist' ? curr.dentistHeroHeadline : category === 'sanitaer' ? curr.tradeHeroHeadline : curr.cafeHeroHeadline} <br />
-            <span className={`text-transparent bg-clip-text bg-gradient-to-r ${style.gradientText}`}>
-              {name}
-            </span>
-          </h2>
-
-          <p className="text-lg text-stone-300 font-light leading-relaxed max-w-2xl">
-            {category === 'bakery' ? curr.bakeryHeroDesc : category === 'hair_salon' ? curr.beautyHeroDesc : category === 'dentist' ? curr.dentistHeroDesc : category === 'sanitaer' ? curr.tradeHeroDesc : curr.cafeHeroDesc}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4 pt-2">
-            <div className="flex items-center gap-1.5 bg-stone-900 border border-stone-800 px-4 py-2.5 rounded-2xl">
-              <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-              <span className="text-lg font-bold text-amber-300">{rating}</span>
-              <span className="text-xs text-stone-400">/ 5.0 ({reviewCount} {curr.verifiedReviews})</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-            <a
-              href="#contact"
-              className={`w-full sm:w-auto px-8 py-4 ${style.accentBg} font-bold text-base rounded-2xl transition-all shadow-xl flex items-center justify-center gap-2`}
-            >
-              <Calendar className="w-5 h-5" />
-              <span>{curr.bookTermin}</span>
-            </a>
-            <a
-              href={`tel:${phone}`}
-              className="w-full sm:w-auto px-8 py-4 bg-stone-900 hover:bg-stone-800 text-stone-200 font-semibold text-base rounded-2xl transition-colors border border-stone-800 flex items-center justify-center gap-2"
-            >
-              <Phone className="w-4 h-4 text-amber-400" />
-              <span>{phone}</span>
-            </a>
-          </div>
+      {/* Hero: Bistrot Menu & Centered Warm Atmosphere */}
+      <section className="py-20 px-6 max-w-4xl mx-auto text-center space-y-8">
+        <div className="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+          ☕️ Barista Specialty Coffee & Cuisine
         </div>
-
-        {/* Hero Image */}
-        <div className="lg:col-span-5 relative">
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-stone-800 group">
-            <img
-              src={imgSet.hero}
-              alt={name}
-              className="w-full h-[450px] object-cover group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-transparent opacity-80"></div>
-            <div className="absolute bottom-6 left-6 right-6 p-4 rounded-2xl bg-stone-950/80 backdrop-blur-md border border-stone-800">
-              <p className="text-xs font-semibold uppercase text-amber-400">{city} · Switzerland</p>
-              <p className="text-sm font-serif font-bold text-white mt-1">{name}</p>
-            </div>
-          </div>
+        <h2 className="text-4xl sm:text-6xl font-serif font-extrabold text-amber-50 leading-tight">
+          {lang === 'de' ? 'Herzliche Schweizer Gastfreundschaft' : 'Hospitalité Chaleureuse & Conviviale'}
+        </h2>
+        <p className="text-base sm:text-lg text-amber-200/70 font-light max-w-xl mx-auto leading-relaxed">
+          {lang === 'de' ? `Besuchen Sie uns im ${name} in ${city}. Wir servieren Ihnen köstliche Kaffeespezialitäten, frisch zubereitete Speisen und erlesene Weine.` : `Venez nous rendre visite au ${name} à ${city}. Nous vous proposons d'excellents cafés et une cuisine savoureuse.`}
+        </p>
+        <div className="pt-2 inline-flex items-center gap-2 bg-[#201b17] border border-amber-900/40 px-5 py-2.5 rounded-2xl">
+          <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+          <span className="font-bold text-amber-200">{rating} / 5.0</span>
+          <span className="text-xs text-amber-200/60">({reviewCount} {lang === 'de' ? 'Rezensionen' : 'avis'})</span>
         </div>
       </section>
 
-      {/* ── Services & Quality Badges ──────────────────────────── */}
-      <section id="services" className="py-20 bg-stone-900/50 border-t border-b border-stone-800">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-            <h3 className="text-3xl font-serif font-bold text-white">{curr.services}</h3>
-            <p className="text-sm text-stone-400">Erfahren Sie mehr über unsere Qualitätsstandards und Dienstleistungen in {city}.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className={`p-8 rounded-3xl ${style.cardBg} space-y-4 shadow-lg hover:border-amber-500/40 transition-all group`}>
-              <div className="w-12 h-12 bg-stone-800 rounded-2xl flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6 text-amber-400" />
-              </div>
-              <h4 className="text-xl font-bold font-serif text-white">Schweizer Qualität</h4>
-              <p className="text-sm text-stone-400 leading-relaxed">
-                Höchste Präzision, Zuverlässigkeit und erstklassige Ausführung nach strengen Standards.
-              </p>
-            </div>
-
-            <div className={`p-8 rounded-3xl ${style.cardBg} space-y-4 shadow-lg hover:border-amber-500/40 transition-all group`}>
-              <div className="w-12 h-12 bg-stone-800 rounded-2xl flex items-center justify-center">
-                <Award className="w-6 h-6 text-amber-400" />
-              </div>
-              <h4 className="text-xl font-bold font-serif text-white">{rating} ★ Kundenzufriedenheit</h4>
-              <p className="text-sm text-stone-400 leading-relaxed">
-                Über {reviewCount} echte Google-Bewertungen bestätigen unseren persönlichen Service.
-              </p>
-            </div>
-
-            <div className={`p-8 rounded-3xl ${style.cardBg} space-y-4 shadow-lg hover:border-amber-500/40 transition-all group`}>
-              <div className="w-12 h-12 bg-stone-800 rounded-2xl flex items-center justify-center">
-                <Clock className="w-6 h-6 text-amber-400" />
-              </div>
-              <h4 className="text-xl font-bold font-serif text-white">Schnelle Erreichbarkeit</h4>
-              <p className="text-sm text-stone-400 leading-relaxed">
-                Zentral gelegen in {address}. Wir stehen Ihnen schnell und unkompliziert zur Seite.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Photo Gallery Section ──────────────────────────────── */}
-      <section id="gallery" className="py-20 max-w-7xl mx-auto px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-900 border border-stone-800 text-stone-300 text-xs">
-            <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
-            <span>{curr.gallery}</span>
-          </div>
-          <h3 className="text-3xl font-serif font-bold text-white">Einblick in unseren Betrieb</h3>
-        </div>
-
+      {/* Featured Images Grid */}
+      <section className="max-w-6xl mx-auto px-6 pb-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="relative rounded-3xl overflow-hidden border border-stone-800 group h-80">
-            <img
-              src={imgSet.g1}
-              alt="Gallery 1"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-stone-950/30 group-hover:bg-transparent transition-colors"></div>
+          <div className="rounded-3xl overflow-hidden border border-amber-900/30 shadow-xl h-80">
+            <img src={imgSet.p1} className="w-full h-full object-cover" alt="Coffee" />
           </div>
-          <div className="relative rounded-3xl overflow-hidden border border-stone-800 group h-80">
-            <img
-              src={imgSet.g2}
-              alt="Gallery 2"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            />
-            <div className="absolute inset-0 bg-stone-950/30 group-hover:bg-transparent transition-colors"></div>
+          <div className="rounded-3xl overflow-hidden border border-amber-900/30 shadow-xl h-80">
+            <img src={imgSet.p2} className="w-full h-full object-cover" alt="Dishes" />
           </div>
         </div>
       </section>
 
-      {/* ── Contact Section ────────────────────────────────────── */}
-      <section id="contact" className="py-20 bg-stone-900/30 border-t border-stone-800">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Info Card */}
-          <div className="lg:col-span-6 space-y-8 bg-stone-900/90 p-8 sm:p-10 rounded-3xl border border-stone-800 shadow-xl">
-            <h3 className="text-2xl font-serif font-bold text-white">{curr.contact}</h3>
-
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-stone-800 text-amber-400 flex items-center justify-center shrink-0">
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-stone-400 uppercase">Adresse</h4>
-                  <p className="text-base font-medium text-white mt-0.5">{address}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-stone-800 text-amber-400 flex items-center justify-center shrink-0">
-                  <Phone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-stone-400 uppercase">Telefon</h4>
-                  <a href={`tel:${phone}`} className="text-base font-medium text-amber-400 hover:underline mt-0.5 block">{phone}</a>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-stone-800 text-amber-400 flex items-center justify-center shrink-0">
-                  <Mail className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-stone-400 uppercase">E-Mail</h4>
-                  <p className="text-base font-medium text-stone-300 mt-0.5">{email}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Opening Hours */}
-            <div className="pt-6 border-t border-stone-800 space-y-3">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-400" />
-                <span>{curr.hoursTitle}</span>
-              </h4>
-              <div className="grid grid-cols-2 text-xs text-stone-400 gap-2">
-                <div>{curr.weekdays}:</div>
-                <div className="text-white font-mono">08:00 - 18:30</div>
-                <div>{curr.saturday}:</div>
-                <div className="text-white font-mono">08:00 - 16:00</div>
-                <div>{curr.sunday}:</div>
-                <div className="text-stone-500 font-mono">{curr.closed}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Interactive Form */}
-          <div className="lg:col-span-6 bg-stone-900/90 p-8 sm:p-10 rounded-3xl border border-stone-800 shadow-xl">
-            <h3 className="text-2xl font-serif font-bold text-white mb-6">{curr.quickInquiry}</h3>
-
-            {formSubmitted ? (
-              <div className="p-8 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center space-y-3">
-                <Check className="w-12 h-12 text-emerald-400 mx-auto" />
-                <p className="text-emerald-300 font-medium text-sm">{curr.submittedMsg}</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-medium text-stone-400 mb-1">{curr.yourName}</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="z.B. Hans Muster"
-                    className="w-full px-4 py-3 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-stone-400 mb-1">{curr.phoneEmail}</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="079 123 45 67 / ihram@beispiel.ch"
-                    className="w-full px-4 py-3 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-stone-400 mb-1">{curr.message}</label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Wie können wir Ihnen helfen?"
-                    className="w-full px-4 py-3 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-500 text-sm resize-none"
-                  ></textarea>
-                </div>
-                <button
-                  type="submit"
-                  className={`w-full py-4 ${style.accentBg} font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 text-sm`}
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{curr.sendBtn}</span>
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Footer ────────────────────────────────────────────── */}
-      <footer className="py-12 bg-stone-950 border-t border-stone-800 text-stone-400 text-sm text-center">
-        <div className="max-w-6xl mx-auto px-6 space-y-3">
-          <p className="font-serif text-xl font-bold text-white">{name}</p>
-          <p className="text-xs text-stone-500">{address} · Telefon: {phone}</p>
-          <p className="text-xs text-stone-600 pt-2">© {new Date().getFullYear()} {name} · {curr.allRights}</p>
-        </div>
+      {/* Footer */}
+      <footer className="py-12 bg-[#0c0a09] text-center text-xs text-amber-200/50 space-y-2">
+        <p className="font-serif text-base text-amber-100">{name} · {address}</p>
+        <p>Telefon: {phone}</p>
       </footer>
     </div>
   );
