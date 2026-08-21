@@ -108,7 +108,7 @@ def init_db():
                 subdomain        TEXT UNIQUE,
                 admin_pass       TEXT,
                 site_config      TEXT,
-                is_published     BOOLEAN DEFAULT 1,
+                is_published     INTEGER DEFAULT 1,
                 
                 status           TEXT DEFAULT 'discovered',
                 
@@ -239,6 +239,20 @@ def get_lead_by_subdomain(subdomain: str) -> dict | None:
         if isinstance(result["site_config"], str):
             result["site_config"] = json.loads(result["site_config"])
     return result
+
+
+def get_all_leads() -> list:
+    conn = db.get_connection()
+    if db.is_postgres:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM leads ORDER BY created_at DESC")
+            rows = cur.fetchall()
+            results = [_row_to_dict(r, cur) for r in rows]
+    else:
+        rows = conn.execute("SELECT * FROM leads ORDER BY created_at DESC").fetchall()
+        results = [_row_to_dict(r) for r in rows]
+    conn.close()
+    return results
 
 
 def set_deployed(lead_id: str):
