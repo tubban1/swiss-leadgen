@@ -1,7 +1,7 @@
 import React from 'react';
 import { headers } from 'next/headers';
 import { neon } from '@neondatabase/serverless';
-import { redirect } from 'next/navigation';
+import AdminDashboard from './admin/dashboard/page';
 import { 
   Building2, 
   MapPin, 
@@ -37,7 +37,10 @@ async function getLeadBySlug(slug: string) {
       LIMIT 1;
     `;
 
-    return rows.length > 0 ? rows[0] : null;
+    if (rows.length > 0) {
+      return JSON.parse(JSON.stringify(rows[0]));
+    }
+    return null;
   } catch (err) {
     console.error('Failed to query lead from database:', err);
     return null;
@@ -62,9 +65,9 @@ export default async function RootPage() {
     subdomain = hostname.replace('.tubban.com', '');
   }
 
-  // 2. 如果主站请求或无子域名，跳转 Admin Dashboard
-  if (!subdomain || subdomain === 'sites' || subdomain === 'admin' || hostname.includes('vercel.app')) {
-    redirect('/admin/dashboard');
+  // 2. 无子域名或访问 sites.tubban.com 主站：直接渲染 Admin Dashboard 控制台组件
+  if (!subdomain || subdomain === 'sites' || subdomain === 'admin' || hostname === 'multitenantsite-lac.vercel.app') {
+    return <AdminDashboard />;
   }
 
   // 3. 子域名请求：直接渲染 Neon 数据库拉取的全德语商户官网
@@ -246,7 +249,7 @@ export default async function RootPage() {
           {/* Quick Inquiry Form */}
           <div className="bg-stone-900/90 p-8 rounded-3xl border border-stone-800 space-y-6 shadow-xl">
             <h3 className="text-2xl font-serif font-bold text-white">Unverbindliche Anfrage</h3>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-stone-400 mb-1">Ihr Name</label>
                 <input
