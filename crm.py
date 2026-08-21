@@ -1,6 +1,11 @@
 """
 CRM 数据库 — 自动适配 Neon PostgreSQL / SQLite
-管理所有 leads 的生命周期、多租户网站配置 (site_config) 以及 DNS 验证数据 (dns_verification)
+严格管理 Multi-Agent 流水线的 5 个中间态与完整数据结构：
+1. LeadDiscovery: place_id, name, address, city, canton, language, rating...
+2. LeadEnrichment: email, phone, website_hint, reviews_data, opening_hours, services_data
+3. SiteBuilder: slug, subdomain, admin_pass, site_config (Awwwards 站姿与双语配置)
+4. VercelAgent: vercel_status, dns_verification (从 Vercel API 提取的动态凭证 Value)
+5. GoDaddyAgent: godaddy_status, is_published, status, expires_at
 """
 import sqlite3
 import json
@@ -37,7 +42,7 @@ db = DatabaseWrapper()
 
 
 def init_db():
-    """初始化数据库表并执行 Schema Migration (添加 dns_verification 独立列)"""
+    """初始化数据库表并执行 Schema Migration 补全 Multi-Agent 所有中间态字段"""
     conn = db.get_connection()
     if db.is_postgres:
         with conn.cursor() as cur:
@@ -51,18 +56,28 @@ def init_db():
                     city             VARCHAR(100),
                     canton           VARCHAR(10),
                     language         VARCHAR(10),
+                    
+                    -- Lead Enrichment Agent 产出的中间态
                     email            VARCHAR(255),
                     phone            VARCHAR(100),
                     website_hint     TEXT,
                     rating           NUMERIC(3, 2),
                     review_count     INT,
                     google_maps_url  TEXT,
+                    reviews_data     TEXT,
+                    opening_hours    TEXT,
+                    services_data    TEXT,
                     
+                    -- Site Builder Agent 产出的中间态
                     slug             VARCHAR(255) UNIQUE,
                     subdomain        VARCHAR(255) UNIQUE,
                     admin_pass       VARCHAR(100),
                     site_config      TEXT,
+                    
+                    -- Vercel Agent & GoDaddy Agent 产出的网络中间态
                     dns_verification TEXT,
+                    vercel_status    VARCHAR(50) DEFAULT 'unmounted',
+                    godaddy_status   VARCHAR(50) DEFAULT 'unconfigured',
                     is_published     BOOLEAN DEFAULT TRUE,
                     
                     status           VARCHAR(50) DEFAULT 'discovered',
@@ -75,8 +90,13 @@ def init_db():
                     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
-                -- 自动 Migration 校验：添加 dns_verification 字段
+                -- 自动 Schema Migration 补全列
+                ALTER TABLE leads ADD COLUMN IF NOT EXISTS reviews_data TEXT;
+                ALTER TABLE leads ADD COLUMN IF NOT EXISTS opening_hours TEXT;
+                ALTER TABLE leads ADD COLUMN IF NOT EXISTS services_data TEXT;
                 ALTER TABLE leads ADD COLUMN IF NOT EXISTS dns_verification TEXT;
+                ALTER TABLE leads ADD COLUMN IF NOT EXISTS vercel_status VARCHAR(50) DEFAULT 'unmounted';
+                ALTER TABLE leads ADD COLUMN IF NOT EXISTS godaddy_status VARCHAR(50) DEFAULT 'unconfigured';
 
                 CREATE TABLE IF NOT EXISTS email_log (
                     id          VARCHAR(64) PRIMARY KEY,
@@ -89,7 +109,7 @@ def init_db():
                 );
             """)
             conn.commit()
-            print("✅ CRM 数据库初始化与 Schema Migration 成功 [Neon PostgreSQL: dns_verification 列就绪]")
+            print("✅ CRM 数据库初始化与 Full Schema Migration 成功 [Neon PostgreSQL: 所有 Multi-Agent 中间态字段就绪]")
     else:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS leads (
@@ -101,18 +121,25 @@ def init_db():
                 city             TEXT,
                 canton           TEXT,
                 language         TEXT,
+                
                 email            TEXT,
                 phone            TEXT,
                 website_hint     TEXT,
                 rating           REAL,
                 review_count     INTEGER,
                 google_maps_url  TEXT,
+                reviews_data     TEXT,
+                opening_hours    TEXT,
+                services_data    TEXT,
                 
                 slug             TEXT UNIQUE,
                 subdomain        TEXT UNIQUE,
                 admin_pass       TEXT,
                 site_config      TEXT,
+                
                 dns_verification TEXT,
+                vercel_status    TEXT DEFAULT 'unmounted',
+                godaddy_status   TEXT DEFAULT 'unconfigured',
                 is_published     INTEGER DEFAULT 1,
                 
                 status           TEXT DEFAULT 'discovered',
@@ -154,17 +181,13 @@ def _row_to_dict(row, cursor=None):
         d = dict(row)
 
     # 自动解析 JSON 字符串
-    if d.get("site_config") and isinstance(d["site_config"], str):
-        try:
-            d["site_config"] = json.loads(d["site_config"])
-        except Exception:
-            pass
-
-    if d.get("dns_verification") and isinstance(d["dns_verification"], str):
-        try:
-            d["dns_verification"] = json.loads(d["dns_verification"])
-        except Exception:
-            pass
+    json_fields = ["site_config", "dns_verification", "reviews_data", "opening_hours", "services_data"]
+    for field in json_fields:
+        if d.get(field) and isinstance(d[field], str):
+            try:
+                d[field] = json.loads(d[field])
+            except Exception:
+                pass
 
     return d
 
@@ -226,11 +249,10 @@ def insert_lead(data: dict) -> str:
 def update_lead(lead_id: str, **kwargs):
     kwargs["updated_at"] = datetime.utcnow().isoformat()
 
-    if "site_config" in kwargs and isinstance(kwargs["site_config"], (dict, list)):
-        kwargs["site_config"] = json.dumps(kwargs["site_config"], ensure_ascii=False)
-
-    if "dns_verification" in kwargs and isinstance(kwargs["dns_verification"], (dict, list)):
-        kwargs["dns_verification"] = json.dumps(kwargs["dns_verification"], ensure_ascii=False)
+    json_fields = ["site_config", "dns_verification", "reviews_data", "opening_hours", "services_data"]
+    for field in json_fields:
+        if field in kwargs and isinstance(kwargs[field], (dict, list)):
+            kwargs[field] = json.dumps(kwargs[field], ensure_ascii=False)
 
     if db.is_postgres and "is_published" in kwargs:
         kwargs["is_published"] = bool(kwargs["is_published"])
@@ -293,64 +315,6 @@ def get_all_leads() -> list:
 def set_deployed(lead_id: str):
     expires = (datetime.utcnow() + timedelta(days=FREE_TRIAL_DAYS)).isoformat()
     update_lead(lead_id, status="deployed", expires_at=expires, is_published=True if db.is_postgres else 1)
-
-
-def log_email(lead_id: str, email_type: str, subject: str, body_html: str):
-    log_id = str(uuid.uuid4())
-    conn = db.get_connection()
-    if db.is_postgres:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO email_log (id, lead_id, type, subject, body_html)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (log_id, lead_id, email_type, subject, body_html))
-            conn.commit()
-    else:
-        conn.execute("""
-            INSERT INTO email_log (id, lead_id, type, subject, body_html)
-            VALUES (?, ?, ?, ?, ?)
-        """, (log_id, lead_id, email_type, subject, body_html))
-        conn.commit()
-    conn.close()
-
-
-def get_leads_by_status(status: str) -> list:
-    conn = db.get_connection()
-    if db.is_postgres:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM leads WHERE status=%s", (status,))
-            rows = cur.fetchall()
-            results = [_row_to_dict(r, cur) for r in rows]
-    else:
-        rows = conn.execute("SELECT * FROM leads WHERE status=?", (status,)).fetchall()
-        results = [_row_to_dict(r) for r in rows]
-    conn.close()
-    return results
-
-
-def get_expired_leads() -> list:
-    conn = db.get_connection()
-    now_iso = datetime.utcnow().isoformat()
-    if db.is_postgres:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT * FROM leads
-                WHERE status = 'emailed'
-                  AND expires_at < %s
-                  AND paid_at IS NULL
-            """, (now_iso,))
-            rows = cur.fetchall()
-            results = [_row_to_dict(r, cur) for r in rows]
-    else:
-        rows = conn.execute("""
-            SELECT * FROM leads
-            WHERE status = 'emailed'
-              AND expires_at < ?
-              AND paid_at IS NULL
-        """, (now_iso,)).fetchall()
-        results = [_row_to_dict(r) for r in rows]
-    conn.close()
-    return results
 
 
 if __name__ == "__main__":

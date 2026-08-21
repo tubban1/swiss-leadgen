@@ -1,57 +1,103 @@
-# 🇨🇭 Swiss LeadGen — 全闭环 DNS 验证凭证提取、数据库保存与全自动写入架构规范 (Closed-Loop Provisioning & Verification Standard)
+# 🇨🇭 Swiss LeadGen — Multi-Agent 强中间态数据库存储与数据流转规范 (Explicit Multi-Agent Pipeline Storage Spec)
 
-> **核心流转法则**：每一个域名在 Vercel 挂载时，均会产生一个独有的所有权验证 Value (`vc-domain-verify=...`)。系统自动将 Vercel API 返回的验证凭证数据**保存至 Neon PostgreSQL 数据库**，下一个流程**从数据库消费此凭证**并精确写入 GoDaddy，最后触发 Vercel 二次校验实现 100% 自动激活。
+> **核心设计思想**：每个 Agent 的产出与网络交互凭证，**都必须作为强中间态显式保存至 Neon PostgreSQL 数据库中**，供下一个 Agent 或部署节点直接消费与使用。
 
 ---
 
-## 🔄 4 步全闭环数据流转图解 (Data Flow Architecture)
+## 🗄️ 1. `leads` 数据库表结构与 Agent 产出中间态映射
+
+```sql
+CREATE TABLE leads (
+    -- Agent 1: LeadDiscoveryAgent 产出
+    id               VARCHAR(64) PRIMARY KEY,
+    place_id         VARCHAR(255) UNIQUE,
+    name             TEXT NOT NULL,
+    category         VARCHAR(100),
+    address          TEXT,
+    city             VARCHAR(100),
+    canton           VARCHAR(10),
+    language         VARCHAR(10),
+    rating           NUMERIC(3, 2),
+    review_count     INT,
+    google_maps_url  TEXT,
+    
+    -- Agent 2: LeadEnrichmentAgent 产出中间态
+    email            VARCHAR(255),
+    phone            VARCHAR(100),
+    website_hint     TEXT,
+    reviews_data     TEXT,       -- [中间态] 抓取的真实 Google 用户评语列表 (JSON)
+    opening_hours    TEXT,       -- [中间态] 营业时间 JSON
+    services_data    TEXT,       -- [中间态] 主营服务项目与价格表 (JSON)
+    
+    -- Agent 3: SiteBuilderAgent 产出中间态
+    slug             VARCHAR(255) UNIQUE,
+    subdomain        VARCHAR(255) UNIQUE,
+    admin_pass       VARCHAR(100),
+    site_config      TEXT,       -- [中间态] 全套 Awwwards 建站与双语 Content (JSON)
+    
+    -- Agent 4: VercelAgent 产出中间态
+    dns_verification TEXT,       -- [中间态] 从 Vercel API 获取的专属 TXT 验证 Value (JSON)
+    vercel_status    VARCHAR(50) DEFAULT 'unmounted',
+    
+    -- Agent 5: GoDaddyAgent 产出中间态
+    godaddy_status   VARCHAR(50) DEFAULT 'unconfigured',
+    is_published     BOOLEAN DEFAULT TRUE,
+    status           VARCHAR(50) DEFAULT 'discovered',
+    expires_at       TIMESTAMP
+);
+```
+
+---
+
+## 🔄 2. Multi-Agent 数据流转全景图
 
 ```
-┌───────────────────────────────────────────────────────────────────────────┐
-│ Step 1: Vercel REST API 域名挂载与动态凭证提取                             │
-│ 调 POST /v9/projects/multi_tenant_site/domains                             │
-│ 提取独有 Verification 凭证:                                                │
-│ Type: TXT | Target: _vercel.tubban.com | Value: vc-domain-verify=...       │
-└─────────────────────────────────────┬─────────────────────────────────────┘
-                                      │
-                                      ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│ Step 2: Neon PostgreSQL 云数据库持久化保存                                │
-│ 将提取到的 verification_info (含精准 TXT Value) 序列化存入 leads 表       │
-└─────────────────────────────────────┬─────────────────────────────────────┘
-                                      │
-                                      ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│ Step 3: 从数据库消费凭证并全自动写入 GoDaddy                               │
-│ 1. 显式写入 CNAME 记录: {subdomain_prefix} ➔ cname.vercel-dns.com        │
-│ 2. 从数据库读取并写入专属 TXT 校验记录: _vercel ➔ {vc-domain-verify=...}    │
-└─────────────────────────────────────┬─────────────────────────────────────┘
-                                      │
-                                      ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│ Step 4: Vercel 所有权二次校验与开通                                        │
-│ 调 POST /v9/projects/multi_tenant_site/domains/{domain}/verify           │
-│ 状态由 "Verification Required" 自动转为 "Valid Configuration" (上线成功)   │
-└───────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Agent 1: LeadDiscoveryAgent                                              │
+│ 产出: name, address, city, rating, place_id                              │
+│ 存库 ➔ leads (status = 'discovered')                                     │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Agent 2: LeadEnrichmentAgent                                             │
+│ 产出: reviews_data (真实评论), email, phone, services_data               │
+│ 存库 ➔ UPDATE leads SET reviews_data=..., email=... (status = 'enriched')│
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Agent 3: SiteBuilderAgent                                                │
+│ 消费: reviews_data + category ➔ 生成 Awwwards site_config & 双语 Content │
+│ 存库 ➔ UPDATE leads SET site_config=... (status = 'configured')          │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Agent 4: VercelAgent                                                     │
+│ 消费: subdomain ➔ 调 Vercel API 挂载 ➔ 提取独有 Verification TXT Value    │
+│ 存库 ➔ UPDATE leads SET dns_verification=... (status = 'vercel_mounted') │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Agent 5: GoDaddyAgent                                                    │
+│ 消费: 从 DB 读取 dns_verification 独立列 ➔ 写入 GoDaddy CNAME & TXT 记录 │
+│ 触发 ➔ Vercel 二次校验 (verify_domain) ➔ 上线 (status = 'deployed')      │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📋 各域名独有 TXT Value 在 Neon 数据库中的映射清单
-
-| 商家名称 | 域名 (Domain) | 数据库保存的真实 TXT Value (Vercel Verification) |
-| :--- | :--- | :--- |
-| **Sanitär Express Seeland** | `sanitaer-express-seeland.sites.tubban.com` | `vc-domain-verify=sanitaer-express-seeland.sites.tubban.com,b51a1f4ab5b27431d916` |
-| **Cabinet Dentaire Place** | `dentiste-place-centrale.sites.tubban.com` | `vc-domain-verify=dentiste-place-centrale.sites.tubban.com,fc985734d6b65419bf1a` |
-| **Boulangerie du Port Bienne**| `boulangerie-du-port-bienne.sites.tubban.com` | `vc-domain-verify=boulangerie-du-port-bienne.sites.tubban.com,eafe26ea27286d15a731` |
-| **Brasserie della Gare** | `brasserie-gare-bienne.sites.tubban.com` | `vc-domain-verify=brasserie-gare-bienne.sites.tubban.com,d30931d9fa47d5f9bec8` |
-| **Bäckerei Müller** | `backerei-muller.tubban.com` | `vc-domain-verify=backerei-muller.tubban.com,1ff08e1a1b0eb11459fe` |
-
----
-
-## 🚀 运维运行命令
+## 🚀 常用流水线命令
 
 ```bash
-# 全闭环触发凭证提取、数据库保存、GoDaddy 精准写入与 Vercel 所有权校验
+# 1. 重新为全量 Lead 生成并保存 site_config 中间态
+python tools/enrich_and_build_all_leads.py
+
+# 2. 全闭环 5 阶段 Agent 数据流转与全自动挂载/解析
 python tools/auto_provision_closed_loop.py
+
+# 3. 查验 Neon DB 中各中间态字段保存状态
+python tools/check_db_dns_verification.py
 ```
