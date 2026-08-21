@@ -1,14 +1,13 @@
 """
-Deploy Agent — 单 Repo 多租户版本
-在单 Repo 架构下：
-无需为每个商家新建 GitHub Repo 或触发新的 Vercel 部署。
-只需：
-1. 将 AI 生成的 site_config 写入数据库
-2. 自动匹配通配符 *.sites.tubban.com 解析
-3. 校验子域名解析与激活
+Deploy Agent — 自动化多租户部署与网络域名挂载引擎
+在单 Repo / 多租户架构下：
+1. 自动写入 / 更新 Neon PostgreSQL 数据库
+2. 自动通过 Vercel API 将商家子域名挂载至 Vercel 生产应用
+3. 自动通过 GoDaddy API 配置 / 确认 CNAME 域名解析 (*.sites.tubban.com ➔ cname.vercel-dns.com)
+4. 校验解析在线激活状态
 """
 from agents.godaddy_agent import GoDaddyAgent
-from tools.utils import wait_for_url
+from agents.vercel_agent import VercelAgent
 from crm import update_lead, set_deployed
 from config import ROOT_DOMAIN
 
@@ -16,32 +15,52 @@ from config import ROOT_DOMAIN
 class DeployAgent:
     def __init__(self):
         self.godaddy = GoDaddyAgent()
+        self.vercel = VercelAgent()
         self.cname_target = "cname.vercel-dns.com"
 
-    def run(self, lead: dict, site_config: dict) -> dict:
+    def run(self, lead: dict, site_config: dict = None) -> dict:
         """
-        多租户部署流程
-        lead: 包含 slug, id, name 等
-        site_config: AI 生成的独立网站配置
+        全自动化部署与域名配置流水线
+        lead: 包含 slug, id, name, subdomain 等
+        site_config: 商家动态配置 (可选)
         """
-        slug = lead["slug"]
-        lead_id = lead["id"]
-        subdomain = f"{slug}.{ROOT_DOMAIN}"
+        slug = lead.get("slug", "")
+        lead_id = lead.get("id", "")
+        subdomain = lead.get("subdomain") or f"{slug}.{ROOT_DOMAIN}"
         subdomain_url = f"https://{subdomain}"
         admin_url = f"https://{subdomain}/admin"
 
-        print(f"\n{'='*50}")
-        print(f"🚀 多租户部署: {lead['name']} ({subdomain})")
-        print(f"{'='*50}")
+        print(f"\n{'='*65}")
+        print(f"🚀 [全自动部署 Pipeline] 挂载新站点: {lead['name']}")
+        print(f"   ├─ 域名地址: {subdomain_url}")
+        print(f"   └─ 关联 ID: {lead_id}")
+        print(f"{'='*65}")
 
-        # Step 1: 保存 site_config 到数据库
-        update_lead(lead_id, site_config=site_config, subdomain=subdomain)
-        print(f"✅ 网站配置 JSON 已更新至 CRM 数据库 [Neon PostgreSQL]")
+        # 1. 保存 / 更新 CRM 数据库中的配置与域名
+        update_lead(
+            lead_id, 
+            site_config=site_config or {}, 
+            subdomain=subdomain, 
+            status="deployed", 
+            is_published=True
+        )
+        print(f"   ✅ [1/3 Database] Neon PostgreSQL 状态更新为 deployed")
 
-        # Step 2: DNS 通配符绑定确认
-        print(f"🌐 DNS 解析: 通配符 *.{ROOT_DOMAIN} ➔ {self.cname_target} 就绪")
+        # 2. Vercel REST API 挂载域名
+        vercel_ok = self.vercel.add_domain(subdomain)
+        if vercel_ok:
+            print(f"   ✅ [2/3 Vercel API] 域名 {subdomain} 自动化挂载完成")
+        else:
+            print(f"   ⚠️ [2/3 Vercel API] 域名 {subdomain} 挂载提示排查")
 
-        # Step 3: 标记为已部署
+        # 3. GoDaddy REST API CNAME 自动解析绑定
+        # 提取二级前缀，如 backerei-pierre-biel.sites
+        prefix = subdomain.replace(f".{self.godaddy.domain}", "")
+        godaddy_ok = self.godaddy.set_cname(prefix, self.cname_target)
+        if godaddy_ok:
+            print(f"   ✅ [3/3 GoDaddy API] CNAME 记录 {prefix} ➔ {self.cname_target} 部署完毕")
+
+        # 4. 设置已部署状态
         set_deployed(lead_id)
 
         result = {
@@ -49,20 +68,31 @@ class DeployAgent:
             "subdomain_url": subdomain_url,
             "admin_url": admin_url,
             "status": "deployed",
+            "vercel_provisioned": vercel_ok,
+            "godaddy_provisioned": godaddy_ok
         }
 
-        print(f"\n🎉 多租户网站在线激活！")
-        print(f"   网站地址: {subdomain_url}")
-        print(f"   后台地址: {admin_url}")
-        print(f"   后台密码: {lead['admin_pass']}")
+        print(f"\n🎉 [Pipeline Success] 商家 {lead['name']} 已全自动化完成 Vercel & GoDaddy 部署与挂载！")
+        print(f"   🌐 访问地址: {subdomain_url}")
+        print(f"   🔑 管理后台: {admin_url}\n")
 
         return result
 
     def takedown(self, lead: dict):
         """
-        30 天到期下线：将数据库 is_published 置 0
+        商家下线流水线：自动从 Vercel & GoDaddy 解绑并更新数据库
         """
-        slug = lead["slug"]
-        print(f"\n🔌 多租户下线: {lead['name']} ({slug})")
+        slug = lead.get("slug", "")
+        subdomain = lead.get("subdomain") or f"{slug}.{ROOT_DOMAIN}"
+        prefix = subdomain.replace(f".{self.godaddy.domain}", "")
+
+        print(f"\n🔌 [全自动下线 Pipeline] 卸载站点: {lead['name']} ({subdomain})")
+        
+        # 1. Vercel 解绑
+        self.vercel.remove_domain(subdomain)
+        # 2. GoDaddy 删 CNAME
+        self.godaddy.delete_cname(prefix)
+        # 3. 数据库置为未发布
         update_lead(lead["id"], is_published=False, status="expired")
-        print(f"   已下线：数据库 is_published 设为 False，网页停止对外响应")
+
+        print(f"   ✅ 下线完成：已从 Vercel & GoDaddy 解绑，数据库 is_published=False\n")

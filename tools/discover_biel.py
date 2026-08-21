@@ -1,7 +1,7 @@
 """
 Biel High-Quality Merchant Discovery Agent
 专门在瑞士 Biel (Bienne) 抓取并分析优质的高评分本地商家
-存入 Neon PostgreSQL 数据库，并自动为它们匹配多租户子域名。
+存入 Neon PostgreSQL 数据库，并【全自动化触发 Vercel & GoDaddy 域名挂载】。
 """
 import asyncio
 import os
@@ -12,8 +12,8 @@ from pathlib import Path
 # 添加项目根目录到 Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from crm import init_db, lead_exists, insert_lead, update_lead
-from tools.utils import make_slug
+from crm import init_db, insert_lead
+from agents.deploy_agent import DeployAgent
 
 BIEL_LEADS_DATA = [
     {
@@ -101,7 +101,6 @@ BIEL_LEADS_DATA = [
         "slug": "sanitaer-biel-ag",
         "subdomain": "sanitaer-biel-ag.sites.tubban.com"
     },
-    # 第二批 Biel 优质商业商家
     {
         "place_id": "biel_boulangerie_du_port",
         "name": "Boulangerie du Port Bienne",
@@ -191,23 +190,21 @@ BIEL_LEADS_DATA = [
 
 def run():
     init_db()
-    print("🚀 开始在瑞士 Biel/Bienne 整合并入库优质商家 Leads 到 Neon PostgreSQL...")
-    
-    inserted_count = 0
-    for lead in BIEL_LEADS_DATA:
-        lead_id = insert_lead(lead)
-        update_lead(
-            lead_id, 
-            subdomain=lead["subdomain"], 
-            status="deployed", 
-            is_published=True,
-            admin_pass="Biel2026Lead"
-        )
-        inserted_count += 1
-        print(f"   ✅ [Biel Lead] {lead['name']} ({lead['address']}) -> ⭐{lead['rating']} ({lead['review_count']} 条好评)")
-        print(f"      └─ 专属域名: https://{lead['subdomain']}")
+    deploy_agent = DeployAgent()
 
-    print(f"\n🎉 成功为瑞士 Biel/Bienne 激活入库 {inserted_count} 家优质本地商家！")
+    print("🚀 开始在瑞士 Biel/Bienne 整合并入库优质商家 Leads...")
+    print("⚡ [固化流程] 自动同步触发 Neon DB + Vercel Domains API + GoDaddy DNS API...\n")
+    
+    count = 0
+    for item in BIEL_LEADS_DATA:
+        lead_id = insert_lead(item)
+        item["id"] = lead_id
+        
+        # 核心固化步骤：自动化部署 + 域名绑定
+        res = deploy_agent.run(item)
+        count += 1
+
+    print(f"\n🎉 成功为瑞士 Biel/Bienne 全自动化激活上线 {count} 家优质本地商家！")
 
 if __name__ == "__main__":
     run()
