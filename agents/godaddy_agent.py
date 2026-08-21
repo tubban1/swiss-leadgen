@@ -1,6 +1,6 @@
 """
-GoDaddy Agent — 自动化向 GoDaddy DNS Zone 添加 CNAME 与 TXT 域名验证记录
-支持 API Key/Secret 与 PAT Token (gd_pat_...) 两种鉴权模式
+GoDaddy Agent — 自动化向 GoDaddy DNS Zone 添加 CNAME 与合并 TXT 域名验证记录
+支持 API PAT Token (gd_pat_...) 鉴权与多 TXT 凭证全量合并写入
 """
 import os
 import requests
@@ -22,50 +22,48 @@ class GoDaddyAgent:
         ]
 
     def _get_auth_headers_list(self) -> list:
-        """
-        根据 .env 中的配置，构建多种可能的 Authorization 请求头组合
-        """
         headers_list = []
-        
-        # 1. 尝试使用 GODADDY_TOKEN (PAT Format)
         if self.token:
             headers_list.append({"Authorization": f"sso-key {self.token}", "Content-Type": "application/json"})
             headers_list.append({"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"})
-
-        # 2. 尝试使用 Key & Secret
         if self.api_key and self.api_secret:
             headers_list.append({"Authorization": f"sso-key {self.api_key}:{self.api_secret}", "Content-Type": "application/json"})
-
         if not headers_list:
             headers_list.append({"Authorization": f"sso-key {self.token or 'dummy'}", "Content-Type": "application/json"})
-
         return headers_list
 
     def set_cname(self, subdomain: str, target: str = "cname.vercel-dns.com") -> bool:
         """
-        为给定的子域名写入 CNAME 解析
+        写入或替换子域名的 CNAME 解析记录
         """
         record_name = subdomain.replace(f".{self.domain}", "").strip()
         payload = [{"data": target, "ttl": 600}]
+        return self._put_godaddy_record("CNAME", record_name, payload, f"{subdomain} ➔ {target}")
 
-        return self._send_godaddy_request("CNAME", record_name, payload, f"{subdomain} ➔ {target}")
+    def sync_all_txt_verifications(self, txt_records: list) -> bool:
+        """
+        关键突破：将所有商家在 Neon 数据库中保存的 Verification TXT Value (如 vc-domain-verify=...) 
+        全量合并打包一次性提交给 GoDaddy 的 _vercel 记录，彻底避免后一个商家覆盖前一个商家的 TXT 验证！
+        """
+        if not txt_records:
+            return True
 
-    def set_txt(self, name: str, value: str) -> bool:
-        """
-        添加/替换指定 TXT 验证记录
-        """
-        record_name = name.replace(f".{self.domain}", "").strip()
-        if record_name.endswith("."):
-            record_name = record_name[:-1]
-            
-        payload = [{"data": value, "ttl": 600}]
+        # 构建 GoDaddy 要求的 Records 批量数组
+        payload = []
+        seen_values = set()
+        for item in txt_records:
+            val = item.get("value", "").strip()
+            if val and val not in seen_values:
+                seen_values.add(val)
+                payload.append({"data": val, "ttl": 600})
 
-        return self._send_godaddy_request("TXT", record_name, payload, f"{record_name} ➔ Value: {value[:30]}...")
+        if not payload:
+            return True
 
-    def _send_godaddy_request(self, record_type: str, record_name: str, payload: list, desc: str) -> bool:
-        """
-        循环尝试 Authorization Header 变体与 Endpoint 发起 PUT 请求
-        """
+        print(f"   🔐 [GoDaddy API] 正在将 {len(payload)} 条商家的 Verification TXT 凭证全量合并写入 _vercel 记录...")
+        return self._put_godaddy_record("TXT", "_vercel", payload, f"全量写入 {len(payload)} 条 _vercel TXT 凭证")
+
+    def _put_godaddy_record(self, record_type: str, record_name: str, payload: list, desc: str) -> bool:
         headers_list = self._get_auth_headers_list()
 
         for base_url in self.base_urls:
@@ -76,16 +74,8 @@ class GoDaddyAgent:
                     if res.status_code in (200, 204):
                         print(f"   🌐 [GoDaddy API] 成功写入 {record_type} 记录 [{base_url.split('//')[1]}]: {desc}")
                         return True
-                    elif res.status_code == 404:
-                        # 404 说明需要用 POST 增加新 Record 组
-                        post_url = f"{base_url}/v1/domains/{self.domain}/records"
-                        post_payload = [{"type": record_type, "name": record_name, "data": payload[0]["data"], "ttl": 600}]
-                        post_res = requests.patch(post_url, headers=headers, json=post_payload, timeout=10)
-                        if post_res.status_code in (200, 204):
-                            print(f"   🌐 [GoDaddy API] 成功追加 {record_type} 记录 [{base_url.split('//')[1]}]: {desc}")
-                            return True
-                except Exception as e:
+                except Exception:
                     pass
 
-        print(f"   ⚠️ [GoDaddy API] 写入失败 (鉴权或 Endpoint 限制) ➔ {desc}")
+        print(f"   ⚠️ [GoDaddy API] 写入失败 ➔ {desc}")
         return False
