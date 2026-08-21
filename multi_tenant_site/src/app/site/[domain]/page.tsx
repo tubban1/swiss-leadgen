@@ -11,6 +11,10 @@ import {
   Sparkles
 } from 'lucide-react';
 
+// 强制 Next.js 对任意子域名开启 100% 实时 SSR 动态渲染（避免静态预生成抛出 404）
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface Props {
   params: {
     domain: string;
