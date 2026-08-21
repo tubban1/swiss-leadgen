@@ -34,14 +34,20 @@ export async function POST(request: Request) {
     }
 
     const leadId = leads[0].id;
-    const siteConfigJson = JSON.stringify(siteConfig);
+    const siteConfigStr = typeof siteConfig === 'string' ? siteConfig : JSON.stringify(siteConfig);
 
-    // Upsert 最新配置到 site_configs 表
+    // 同步更新 site_configs 表和 leads 表中的 site_config 字段
     await sql`
-      INSERT INTO site_configs (lead_id, config_json, updated_at)
-      VALUES (${leadId}, ${siteConfigJson}::jsonb, NOW())
+      INSERT INTO site_configs (lead_id, site_config, updated_at)
+      VALUES (${leadId}, ${siteConfigStr}, NOW())
       ON CONFLICT (lead_id)
-      DO UPDATE SET config_json = ${siteConfigJson}::jsonb, updated_at = NOW();
+      DO UPDATE SET site_config = ${siteConfigStr}, updated_at = NOW();
+    `;
+
+    await sql`
+      UPDATE leads
+      SET site_config = ${siteConfigStr}, updated_at = NOW()
+      WHERE id = ${leadId};
     `;
 
     return NextResponse.json({

@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Lock, Key, CheckCircle, Save, Globe, Eye, ArrowLeft, RefreshCw, Sparkles, Sliders, Code2 } from 'lucide-react';
+import { Lock, Key, CheckCircle, Save, Eye, ArrowLeft, RefreshCw, Sparkles, Sliders, Code2 } from 'lucide-react';
 
 export default function TenantAdminPage() {
   const params = useParams();
   const rawDomain = (params?.domain as string) || '';
-  const domain = decodeURIComponent(rawDomain);
+  const domain = decodeURIComponent(rawDomain).replace('.sites.tubban.com', '').replace('.tubban.com', '');
 
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -48,7 +48,6 @@ export default function TenantAdminPage() {
         setSiteConfig(data.siteConfig || {});
         setJsonString(JSON.stringify(data.siteConfig || {}, null, 2));
 
-        // Sync Form States
         const cfg = data.siteConfig || {};
         setHeroTitleDe(cfg?.content?.de?.hero?.title || '');
         setHeroTitleFr(cfg?.content?.fr?.hero?.title || '');
@@ -82,7 +81,6 @@ export default function TenantAdminPage() {
           return;
         }
       } else {
-        // Sync Visual Builder state into siteConfig
         payloadConfig = JSON.parse(JSON.stringify(siteConfig || {}));
         if (!payloadConfig.content) payloadConfig.content = { de: { hero: {} }, fr: { hero: {} } };
         if (!payloadConfig.content.de) payloadConfig.content.de = { hero: {} };
@@ -122,7 +120,6 @@ export default function TenantAdminPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#07090e] text-white flex items-center justify-center p-6 selection:bg-amber-400 selection:text-black">
-        {/* Ambient Backlight */}
         <div className="absolute w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none"></div>
 
         <div className="w-full max-w-md backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 rounded-3xl space-y-6 relative z-10 shadow-2xl">
@@ -130,7 +127,7 @@ export default function TenantAdminPage() {
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-black flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20 font-bold">
               <Lock className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-serif font-bold text-white">Merchant Admin Login</h1>
+            <h1 className="text-2xl font-serif font-bold text-white">Merchant Admin Portal</h1>
             <p className="text-xs text-zinc-400 font-mono">{domain}</p>
           </div>
 
@@ -142,14 +139,14 @@ export default function TenantAdminPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">Passwort (Admin Password)</label>
+              <label className="block text-xs font-mono uppercase text-zinc-400 mb-1">Random Admin Password</label>
               <div className="relative">
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Z.B. Pass_x89a2b"
+                  placeholder="Passwort eingeben"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-400 transition font-mono tracking-wider pl-10"
                 />
                 <Key className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3.5" />
@@ -161,12 +158,12 @@ export default function TenantAdminPage() {
               disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-black text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
             >
-              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>Anmelden (Login)</span>}
+              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>Login & Website Bearbeiten</span>}
             </button>
           </form>
 
           <div className="text-center pt-2">
-            <a href={`/site/${domain}`} className="text-xs text-zinc-500 hover:text-amber-400 font-mono transition flex items-center justify-center gap-1">
+            <a href="/" className="text-xs text-zinc-500 hover:text-amber-400 font-mono transition flex items-center justify-center gap-1">
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Zurück zur Website</span>
             </a>
@@ -178,7 +175,6 @@ export default function TenantAdminPage() {
 
   return (
     <div className="min-h-screen bg-[#07090e] text-white selection:bg-amber-400 selection:text-black">
-      {/* Header Bar */}
       <header className="border-b border-white/10 bg-[#07090e]/80 backdrop-blur-2xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -193,7 +189,7 @@ export default function TenantAdminPage() {
 
           <div className="flex items-center gap-3">
             <a
-              href={`/site/${domain}`}
+              href="/"
               target="_blank"
               rel="noreferrer"
               className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-mono text-zinc-300 transition flex items-center gap-1.5"
@@ -211,11 +207,9 @@ export default function TenantAdminPage() {
         </div>
       </header>
 
-      {/* Main Admin Dashboard Body */}
       <main className="max-w-7xl mx-auto px-6 py-10 space-y-6">
-        {/* Top Notification */}
         {successMsg && (
-          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2 shadow-xl animate-fade-in">
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2 shadow-xl">
             <CheckCircle className="w-4 h-4 text-emerald-400" />
             <span>{successMsg}</span>
           </div>
@@ -226,7 +220,6 @@ export default function TenantAdminPage() {
           </div>
         )}
 
-        {/* Control Mode Switcher Tabs */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex gap-2">
             <button
@@ -263,19 +256,17 @@ export default function TenantAdminPage() {
           </button>
         </div>
 
-        {/* Tab 1: Visual Form Content Builder */}
         {activeTab === 'builder' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8 space-y-6">
-              {/* Hero Section Texts */}
               <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-6 rounded-3xl space-y-4">
                 <h3 className="text-sm font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  <span>Hero Section Content (Hauptbanner)</span>
+                  <span>Hero Banner Content</span>
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1 font-mono">Hero Title (Deutsch / DE)</label>
+                    <label className="block text-xs text-zinc-400 mb-1 font-mono font-bold">Hero Title (DE)</label>
                     <input
                       type="text"
                       value={heroTitleDe}
@@ -284,7 +275,7 @@ export default function TenantAdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1 font-mono">Hero Title (Français / FR)</label>
+                    <label className="block text-xs text-zinc-400 mb-1 font-mono font-bold">Hero Title (FR)</label>
                     <input
                       type="text"
                       value={heroTitleFr}
@@ -293,7 +284,7 @@ export default function TenantAdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1 font-mono">Hero Subtitle (DE)</label>
+                    <label className="block text-xs text-zinc-400 mb-1 font-mono font-bold">Hero Subtitle (DE)</label>
                     <textarea
                       rows={2}
                       value={heroSubtitleDe}
@@ -304,14 +295,13 @@ export default function TenantAdminPage() {
                 </div>
               </div>
 
-              {/* Contact Info */}
               <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-6 rounded-3xl space-y-4">
                 <h3 className="text-sm font-mono font-bold text-amber-400 uppercase tracking-wider">
-                  Kontaktdaten (Business Contact Info)
+                  Contact Info
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1 font-mono">Telefon (Phone)</label>
+                    <label className="block text-xs text-zinc-400 mb-1 font-mono font-bold">Telefon (Phone)</label>
                     <input
                       type="text"
                       value={phone}
@@ -320,7 +310,7 @@ export default function TenantAdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1 font-mono">E-Mail</label>
+                    <label className="block text-xs text-zinc-400 mb-1 font-mono font-bold">E-Mail</label>
                     <input
                       type="email"
                       value={email}
@@ -332,21 +322,19 @@ export default function TenantAdminPage() {
               </div>
             </div>
 
-            {/* Sidebar Info Card */}
             <div className="lg:col-span-4 space-y-6">
               <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-6 rounded-3xl space-y-4">
-                <h4 className="text-xs font-mono uppercase text-zinc-400 font-bold">Admin Credentials Information</h4>
+                <h4 className="text-xs font-mono uppercase text-zinc-400 font-bold">Admin Status</h4>
                 <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-400/30 space-y-2">
-                  <div className="text-xs text-amber-300 font-mono">Random Admin Password:</div>
-                  <div className="text-lg font-mono font-bold text-amber-400">{password}</div>
-                  <div className="text-[10px] text-zinc-400">Stored securely in Neon PostgreSQL leads database table.</div>
+                  <div className="text-xs text-amber-300 font-mono">Current Domain:</div>
+                  <div className="text-sm font-mono font-bold text-amber-400">{subdomain || domain}</div>
+                  <div className="text-[10px] text-zinc-400 font-mono">Authenticated via Neon PostgreSQL random password.</div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tab 2: Advanced Raw JSON Config Editor */}
         {activeTab === 'json' && (
           <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-6 rounded-3xl space-y-4">
             <h3 className="text-xs font-mono uppercase text-amber-400 font-bold">

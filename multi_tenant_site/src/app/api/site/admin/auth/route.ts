@@ -20,9 +20,10 @@ export async function POST(request: Request) {
       .replace('.sites.tubban.com', '')
       .replace('.tubban.com', '');
 
-    // 查询该子域名的真实 lead 记录
+    // 查询该子域名的真实 lead 记录，修正列名 site_config
     const leads = await sql`
-      SELECT l.id, l.name, l.subdomain, l.admin_pass, sc.config_json as site_config
+      SELECT l.id, l.name, l.subdomain, l.admin_pass, 
+             COALESCE(sc.site_config, l.site_config) as site_config
       FROM leads l
       LEFT JOIN site_configs sc ON l.id = sc.lead_id
       WHERE l.subdomain ILIKE ${'%' + cleanDomain + '%'}
@@ -41,11 +42,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Ungültiges Passwort (Invalid password)' }, { status: 401 });
     }
 
+    let parsedConfig = {};
+    if (lead.site_config) {
+      try {
+        parsedConfig = typeof lead.site_config === 'string' ? JSON.parse(lead.site_config) : lead.site_config;
+      } catch (e) {
+        parsedConfig = {};
+      }
+    }
+
     return NextResponse.json({
       success: true,
       name: lead.name,
       subdomain: lead.subdomain,
-      siteConfig: lead.site_config
+      siteConfig: parsedConfig
     });
   } catch (error: any) {
     console.error('Admin Auth Error:', error);
