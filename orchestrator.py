@@ -7,6 +7,7 @@ from agents.website_builder import WebsiteBuilder
 from agents.deploy_agent import DeployAgent
 from agents.email_agent import EmailAgent
 from tools.utils import make_slug
+from config import ROOT_DOMAIN
 
 
 def run_pipeline(lead_data: dict):
@@ -16,10 +17,10 @@ def run_pipeline(lead_data: dict):
     # 1. 初始化 CRM DB
     init_db()
 
-    # 2. 生成 slug
+    # 2. 生成 slug 与子域名
     slug = make_slug(lead_data["name"])
     lead_data["slug"] = slug
-    lead_data["subdomain"] = f"{slug}.tubban.com"
+    lead_data["subdomain"] = f"{slug}.{ROOT_DOMAIN}"
 
     # 3. 插入 CRM
     lead_id = insert_lead(lead_data)
@@ -28,6 +29,7 @@ def run_pipeline(lead_data: dict):
     print(f"\n{'='*60}")
     print(f"🎯 处理 Lead: {lead_data['name']}")
     print(f"   Slug: {slug}")
+    print(f"   目标子域名: {lead_data['subdomain']}")
     print(f"   语言: {lead_data.get('language', 'de')}")
     print(f"{'='*60}")
 
@@ -75,19 +77,19 @@ def run_expiry_check():
 
 if __name__ == "__main__":
     TEST_LEAD = {
-        "place_id": "test_place_multi_tenant_001",
-        "name": "Bäckerei Müller",
-        "category": "bakery",
-        "address": "Bahnhofstrasse 12, 8001 Zürich",
-        "city": "Zürich",
-        "canton": "ZH",
-        "language": "de",
+        "place_id": "test_place_multi_tenant_002",
+        "name": "Café Bellevue",
+        "category": "restaurant",
+        "address": "Quai du Mont-Blanc 7, 1201 Genève",
+        "city": "Geneva",
+        "canton": "GE",
+        "language": "fr",
         "email": None,           # 测试可填入真实邮箱
-        "phone": "+41 44 123 45 67",
+        "phone": "+41 22 731 20 40",
         "website_hint": None,
-        "rating": 4.8,
-        "review_count": 92,
-        "google_maps_url": "https://maps.google.com/?q=Bäckerei+Müller+Zürich",
+        "rating": 4.7,
+        "review_count": 145,
+        "google_maps_url": "https://maps.google.com/?q=Café+Bellevue+Geneva",
     }
 
     run_pipeline(TEST_LEAD)
