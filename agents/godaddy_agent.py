@@ -1,6 +1,6 @@
 """
 GoDaddy Agent — DNS 记录自动化管理
-负责自动添加与移除 CNAME 记录，实现子域名 (xxx.tubban.com) 自动绑定与下线
+负责自动添加与移除 CNAME 记录，实现子域名 (xxx.sites.tubban.com) 自动绑定与下线
 支持 GODADDY_TOKEN (Personal Access Token) 或 GODADDY_API_KEY/SECRET 验证
 """
 import requests
@@ -11,18 +11,18 @@ GODADDY_API_BASE = "https://api.godaddy.com/v1"
 
 class GoDaddyAgent:
     def __init__(self, domain: str = ROOT_DOMAIN):
-        # 如果是 sites.tubban.com，提取真正的 GoDaddy 根域名 tubban.com
-        if "." in domain and domain.count(".") > 1:
+        # 提取真正的主域名 tubban.com
+        if "." in domain and domain.count(".") >= 1:
             parts = domain.split(".")
             self.domain = ".".join(parts[-2:])
         else:
             self.domain = domain
         
-        # 优先使用 GODADDY_TOKEN
-        if GODADDY_TOKEN:
-            auth_val = f"sso-key {GODADDY_TOKEN}"
-        elif GODADDY_API_KEY and GODADDY_API_SECRET:
+        # 组装 GoDaddy 要求的 sso-key 请求头
+        if GODADDY_API_KEY and GODADDY_API_SECRET:
             auth_val = f"sso-key {GODADDY_API_KEY}:{GODADDY_API_SECRET}"
+        elif GODADDY_TOKEN:
+            auth_val = f"sso-key {GODADDY_TOKEN}"
         else:
             auth_val = ""
 
@@ -31,38 +31,52 @@ class GoDaddyAgent:
             "Content-Type": "application/json",
         }
 
-    def set_cname(self, record_name: str, target: str) -> bool:
+    def _clean_record_name(self, full_subdomain: str) -> str:
         """
-        添加/更新一条 CNAME 记录
-        例如: set_cname("backerei-muller.sites", "cname.vercel-dns.com")
+        将 backerei-pierre-biel.sites.tubban.com 转换为 GoDaddy 要求的 CNAME 名称:
+        即 backerei-pierre-biel.sites
         """
+        clean = full_subdomain.replace("https://", "").replace("http://", "").split("/")[0]
+        if clean.endswith(f".{self.domain}"):
+            clean = clean[:-len(f".{self.domain}")].rstrip(".")
+        return clean
+
+    def set_cname(self, subdomain: str, target: str = "cname.vercel-dns.com") -> bool:
+        """
+        添加/更新一条显式 CNAME 记录
+        例如: set_cname("backerei-pierre-biel.sites.tubban.com", "cname.vercel-dns.com")
+        在 GoDaddy 侧生成: backerei-pierre-biel.sites.tubban.com ➔ cname.vercel-dns.com
+        """
+        record_name = self._clean_record_name(subdomain)
         url = f"{GODADDY_API_BASE}/domains/{self.domain}/records/CNAME/{record_name}"
         data = [{
             "data": target,
             "ttl": 600,
         }]
-        print(f"   🌐 [GoDaddy API] 配置 CNAME 记录: {record_name}.{self.domain} ➔ {target}")
+        print(f"   🌐 [GoDaddy API] 显式创建 CNAME 解析: {record_name}.{self.domain} ➔ {target}")
         
         if not self.headers.get("Authorization"):
-            print("   ℹ️ 未完整配置 GODADDY_TOKEN，已准备好自动 DNS 指令")
+            print("   ℹ️ 尚未配置 GODADDY_API_KEY 与 SECRET，已预生成完整 CNAME 指令")
             return True
 
         try:
             r = requests.put(url, headers=self.headers, json=data, timeout=15)
             if r.status_code in (200, 204):
-                print(f"   ✅ [GoDaddy API] CNAME 记录创建成功: {record_name}.{self.domain}")
+                print(f"   ✅ [GoDaddy API] CNAME 记录成功写入: {record_name}.{self.domain}")
                 return True
             else:
-                print(f"   ⚠️ [GoDaddy API] 返回 [{r.status_code}]: {r.text} (请检查 GoDaddy Key/Token 权限)")
+                print(f"   ⚠️ [GoDaddy API] 响应 HTTP [{r.status_code}]: {r.text}")
+                print(f"      👉 请确保在 https://developer.godaddy.com 创建了 API Key & Secret 并写入 .env 中的 GODADDY_API_KEY / GODADDY_API_SECRET")
                 return False
         except Exception as e:
-            print(f"   ❌ [GoDaddy API] 网络联通异常: {e}")
+            print(f"   ❌ [GoDaddy API] 请求网络异常: {e}")
             return False
 
-    def delete_cname(self, record_name: str) -> bool:
+    def delete_cname(self, subdomain: str) -> bool:
         """
         到期下线：移除特定 CNAME 记录
         """
+        record_name = self._clean_record_name(subdomain)
         url = f"{GODADDY_API_BASE}/domains/{self.domain}/records/CNAME/{record_name}"
         print(f"   🌐 [GoDaddy API] 删除 CNAME 记录: {record_name}.{self.domain}")
 
