@@ -28,7 +28,8 @@ VERCEL_TEAM_ID = os.getenv("VERCEL_TEAM_ID", "")
 GODADDY_TOKEN      = os.getenv("GODADDY_TOKEN", "")
 GODADDY_API_KEY    = os.getenv("GODADDY_API_KEY", "")
 GODADDY_API_SECRET = os.getenv("GODADDY_API_SECRET", "")
-ROOT_DOMAIN        = os.getenv("ROOT_DOMAIN", "tubban.com")
+# 如果主站已占用 tubban.com，默认使用 sites.tubban.com (如 backerei-muller.sites.tubban.com)
+ROOT_DOMAIN        = os.getenv("ROOT_DOMAIN", "sites.tubban.com")
 
 # ─── 数据库 (PostgreSQL Neon / SQLite) ───────────────────
 DATABASE_URL       = os.getenv("DATABASE_URL", "")

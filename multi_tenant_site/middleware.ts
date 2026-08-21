@@ -5,8 +5,11 @@ export function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const hostname = req.headers.get('host') || '';
 
-  // 替换根域名获取子域名 (例如: bakerei-muller.tubban.com -> bakerei-muller)
-  const currentHost = hostname.replace(`.tubban.com`, '').replace(`:3000`, '');
+  // 兼容 sites.tubban.com 及 tubban.com
+  const currentHost = hostname
+    .replace(`.sites.tubban.com`, '')
+    .replace(`.tubban.com`, '')
+    .replace(`:3000`, '');
 
   // 内部重定向到 app/[domain] 路由
   url.pathname = `/${currentHost}${url.pathname}`;
