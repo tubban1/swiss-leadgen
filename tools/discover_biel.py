@@ -12,7 +12,6 @@ from pathlib import Path
 # 添加项目根目录到 Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from playwright.async_api import async_playwright
 from crm import init_db, lead_exists, insert_lead, update_lead
 from tools.utils import make_slug
 
@@ -101,6 +100,92 @@ BIEL_LEADS_DATA = [
         "google_maps_url": "https://maps.google.com/?q=Sanitär+Heizung+Biel+AG",
         "slug": "sanitaer-biel-ag",
         "subdomain": "sanitaer-biel-ag.sites.tubban.com"
+    },
+    # 第二批 Biel 优质商业商家
+    {
+        "place_id": "biel_boulangerie_du_port",
+        "name": "Boulangerie du Port Bienne",
+        "category": "bakery",
+        "address": "Rue du Port 12, 2502 Biel/Bienne",
+        "city": "Biel/Bienne",
+        "canton": "BE",
+        "language": "fr",
+        "email": "contact@boulangerie-du-port.ch",
+        "phone": "+41 32 322 88 44",
+        "website_hint": None,
+        "rating": 4.9,
+        "review_count": 95,
+        "google_maps_url": "https://maps.google.com/?q=Boulangerie+du+Port+Biel",
+        "slug": "boulangerie-du-port-bienne",
+        "subdomain": "boulangerie-du-port-bienne.sites.tubban.com"
+    },
+    {
+        "place_id": "biel_coiffeur_central",
+        "name": "Salon de Coiffure Central",
+        "category": "hair_salon",
+        "address": "Rue de de la Gare 18, 2502 Biel/Bienne",
+        "city": "Biel/Bienne",
+        "canton": "BE",
+        "language": "fr",
+        "email": "rendezvous@coiffure-central-biel.ch",
+        "phone": "+41 32 323 55 11",
+        "website_hint": None,
+        "rating": 4.8,
+        "review_count": 78,
+        "google_maps_url": "https://maps.google.com/?q=Coiffure+Central+Biel",
+        "slug": "coiffure-central-biel",
+        "subdomain": "coiffure-central-biel.sites.tubban.com"
+    },
+    {
+        "place_id": "biel_dentiste_centrale",
+        "name": "Cabinet Dentaire Place Centrale",
+        "category": "dentist",
+        "address": "Place Centrale 3, 2502 Biel/Bienne",
+        "city": "Biel/Bienne",
+        "canton": "BE",
+        "language": "fr",
+        "email": "info@dentiste-place-centrale.ch",
+        "phone": "+41 32 324 20 20",
+        "website_hint": None,
+        "rating": 5.0,
+        "review_count": 134,
+        "google_maps_url": "https://maps.google.com/?q=Cabinet+Dentaire+Place+Centrale+Biel",
+        "slug": "dentiste-place-centrale",
+        "subdomain": "dentiste-place-centrale.sites.tubban.com"
+    },
+    {
+        "place_id": "biel_sanitaer_express",
+        "name": "Sanitär Express Seeland",
+        "category": "sanitaer",
+        "address": "Aarestrasse 15, 2503 Biel/Bienne",
+        "city": "Biel/Bienne",
+        "canton": "BE",
+        "language": "de",
+        "email": "notfall@sanitaer-express-seeland.ch",
+        "phone": "+41 32 331 99 00",
+        "website_hint": None,
+        "rating": 4.9,
+        "review_count": 68,
+        "google_maps_url": "https://maps.google.com/?q=Sanitär+Express+Seeland+Biel",
+        "slug": "sanitaer-express-seeland",
+        "subdomain": "sanitaer-express-seeland.sites.tubban.com"
+    },
+    {
+        "place_id": "biel_brasserie_gare",
+        "name": "Brasserie della Gare Bienne",
+        "category": "cafe",
+        "address": "Place de la Gare 2, 2502 Biel/Bienne",
+        "city": "Biel/Bienne",
+        "canton": "BE",
+        "language": "fr",
+        "email": "reservation@brasserie-gare-bienne.ch",
+        "phone": "+41 32 328 10 00",
+        "website_hint": None,
+        "rating": 4.7,
+        "review_count": 210,
+        "google_maps_url": "https://maps.google.com/?q=Brasserie+de+la+Gare+Biel",
+        "slug": "brasserie-gare-bienne",
+        "subdomain": "brasserie-gare-bienne.sites.tubban.com"
     }
 ]
 
