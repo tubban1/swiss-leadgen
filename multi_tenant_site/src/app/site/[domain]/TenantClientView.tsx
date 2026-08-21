@@ -21,9 +21,6 @@ import {
   Croissant,
   Languages,
   Check,
-  Heart,
-  ChevronRight,
-  Sliders,
   Image as ImageIcon
 } from 'lucide-react';
 
@@ -50,7 +47,7 @@ export default function DynamicTenantView({
   rating,
   reviewCount
 }: TenantProps) {
-  // 实时双语状态：de (德语) 或 fr (法语)
+  // 默认语言 de (德语) / 可以在客户端无缝切换为 fr (法语)
   const [lang, setLang] = useState<'de' | 'fr'>('de');
   const [formSubmitted, setFormSubmitted] = useState(false);
 
@@ -147,7 +144,7 @@ export default function DynamicTenantView({
 
   const curr = t[lang];
 
-  // 图像库
+  // 图片资源集
   const images = {
     bakery: {
       hero: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=80',
@@ -178,7 +175,6 @@ export default function DynamicTenantView({
 
   const imgSet = images[category as keyof typeof images] || images.cafe;
 
-  // 主题 UI 配色控制系统
   const themeClasses = {
     bakery: {
       bg: 'bg-stone-950 text-amber-50',
@@ -236,19 +232,19 @@ export default function DynamicTenantView({
 
   return (
     <div className={`min-h-screen ${style.bg} font-sans selection:bg-amber-500 selection:text-stone-950`}>
-      {/* ── Top Bar with Language Switcher ─────────────────────── */}
+      {/* ── Top Bar with Language Switcher DE / FR ────────────────── */}
       <div className="bg-stone-900 border-b border-stone-800 text-xs py-2 px-6 flex items-center justify-between">
         <div className="flex items-center gap-2 text-stone-300 font-medium">
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
           <span>{curr.topBanner}</span>
         </div>
 
-        {/* 双语切换核心逻辑 DE / FR */}
+        {/* 语言切换工具栏 DE / FR */}
         <div className="flex items-center gap-1.5 bg-stone-950 px-2.5 py-1 rounded-full border border-stone-800">
           <Languages className="w-3.5 h-3.5 text-stone-400" />
           <button
             onClick={() => setLang('de')}
-            className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+            className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all ${
               lang === 'de' ? 'bg-amber-500 text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-200'
             }`}
           >
@@ -257,7 +253,7 @@ export default function DynamicTenantView({
           <span className="text-stone-700">|</span>
           <button
             onClick={() => setLang('fr')}
-            className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+            className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all ${
               lang === 'fr' ? 'bg-amber-500 text-stone-950 shadow-sm' : 'text-stone-400 hover:text-stone-200'
             }`}
           >
@@ -266,7 +262,7 @@ export default function DynamicTenantView({
         </div>
       </div>
 
-      {/* ── Sticky Header ──────────────────────────────────────── */}
+      {/* ── Header ────────────────────────────────────────────── */}
       <header className={`border-b ${style.headerBorder} bg-stone-950/90 backdrop-blur-md sticky top-0 z-40`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -299,7 +295,7 @@ export default function DynamicTenantView({
         </div>
       </header>
 
-      {/* ── Hero Section with High-Res Image ───────────────────── */}
+      {/* ── Hero Section ──────────────────────────────────────── */}
       <section className="relative py-20 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
         <div className="lg:col-span-7 space-y-8 text-left">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-stone-900 border border-stone-800 text-amber-400 text-xs font-semibold">
@@ -344,7 +340,7 @@ export default function DynamicTenantView({
           </div>
         </div>
 
-        {/* Hero Image Card */}
+        {/* Hero Image */}
         <div className="lg:col-span-5 relative">
           <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-stone-800 group">
             <img
@@ -361,7 +357,7 @@ export default function DynamicTenantView({
         </div>
       </section>
 
-      {/* ── Rich Features Grid ─────────────────────────────────── */}
+      {/* ── Services & Quality Badges ──────────────────────────── */}
       <section id="services" className="py-20 bg-stone-900/50 border-t border-b border-stone-800">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
@@ -433,7 +429,7 @@ export default function DynamicTenantView({
         </div>
       </section>
 
-      {/* ── Contact & Reservation Form Section ──────────────────── */}
+      {/* ── Contact Section ────────────────────────────────────── */}
       <section id="contact" className="py-20 bg-stone-900/30 border-t border-stone-800">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Info Card */}
