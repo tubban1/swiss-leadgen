@@ -1,60 +1,48 @@
-# 🇨🇭 Swiss LeadGen — 多租户商业建站标准规范文档 (Website Design Standard)
+# 🇨🇭 Swiss LeadGen — Awwwards 级多租户 Web Design Skill 标准规范
 
-> **重要说明**：本项目中所有由 AI 引擎或 Lead Scraping 流程创建、渲染的瑞士商户网站，必须**严格强制遵守**本规范文档中的美学、Look and Feel 独立视觉气质、Layout 版式架构与功能要求。
-
----
-
-## 🎨 一、 5 大行业专属“独立 Look and Feel 与 Layout 架构” (Custom Aesthetics & Layouts)
-
-严禁在不同行业之间套用相同的通用 Layout 版式！必须根据行业属性提供**形态各异、版式截然不同**的独立系统：
-
-1. 🥐 **Bäckerei (烘焙店) — 温馨暖麦手工拆分版式 (Warm Bakery Counter Layout)**
-   - **Look and Feel**: 暖香麦金、烘焙奶油色 (`Warm Amber & Bakery Golden`)
-   - **Layout 版式**: 
-     - **Hero Section**: 采用**左侧文案+右侧经典烘焙柜台大图**的双栏拆分布局。
-     - **产品 Section**: **“Unsere Spezialitäten” 3 列招牌产品卡片**（Buttergipfeli, Pâtisserie, Urdinkelbrot）。
-   - **专属 Badge**: 05:30 晨间烘焙承诺 + 100% Natursauerteig 标志。
-
-2. ✂️ **Coiffeur / Beauty (美发沙龙) — 时尚奢华杂志感版式 (Editorial Magazine Layout)**
-   - **Look and Feel**: 名媛时尚、奢华黑粉/玫瑰金 (`Luxe Onyx Black & Rose Gold`)
-   - **Layout 版式**:
-     - **Hero Section**: 采用**居中大字号杂志排版 + 全宽时尚海报图**的 Editorial 杂志流线版式。
-     - **价目 Section**: **“Price List & Services” 奢华护理与剪发价目表** (Cut & Style, Balayage, Styling)。
-   - **专属 Badge**: Haute Coiffure Switzerland 尊享标志。
-
-3. 🦷 **Zahnarzt (牙科诊所) — 瑞士无瑕医疗极简版式 (Swiss Medical Precision Layout)**
-   - **Look and Feel**: 严谨瑞士医疗、极清医用蓝白 (`Swiss Medical Cyan & Ice White`)
-   - **Layout 版式**:
-     - **Hero Section**: 采用**临床信任数据 + 无痛诊疗 double callout** 布局。
-     - **诊疗 Section**: **“Unsere Behandlungsbereiche” 4 宫格极简白框** (Prophylaxe, Bleaching, Implantologie, Emergency)。
-   - **专属 Badge**: Swiss Quality Standard + 100% 舒缓无痛诊疗承诺。
-
-4. 🛠️ **Sanitär / Trade (水暖工程/维修) — 24/7 工业应急重载版式 (Industrial Heavy Action Layout)**
-   - **Look and Feel**: 工业钢蓝、高对比警示活力橙 (`Industrial Steel Blue & Safety Orange`)
-   - **Layout 版式**:
-     - **Hero Section**: **顶部 24/7 应急通知条 + 30 分钟极速出勤动态 Display** 布局。
-     - **流程 Section**: **“In 3 Schritten” 3 步骤解决管道与水暖问题流程卡** (1. Anrufen ➔ 2. Anfahrt ➔ 3. Reparatur)。
-   - **专属 Badge**: 24/7 Notfallservice + 30 MIN 平均出勤响应。
-
-5. ☕️ **Café / Restaurant (咖啡餐馆) — 意式暗调餐馆 Bistrot 版式 (Dark Bistrot Layout)**
-   - **Look and Feel**: 意式浓缩咖啡暗系、香槟金 (`Dark Espresso & Champagne Gold`)
-   - **Layout 版式**:
-     - **Hero Section**: 居中暖意 Bistrot 氛围 + Barista 特调 Coffee 卡片。
-     - **菜单/画廊 Section**: 精选菜品与环境图集展现。
-   - **专属 Badge**: Barista Specialty Coffee & Cuisine 认证。
+> **核心原则（Constraint-First De-Templatization）**：全站坚决杜绝平庸 AI 模板感（Cookie-Cutter UI）。结合 **Awwwards / BentoGrids.com / Editorial Luxury** 顶级设计规范，针对每个瑞士商家打造打破常规版式的非对称高奢体验。
 
 ---
 
-## 🌐 二、 瑞士多语言引擎规范 (Swiss Bilingual Standard: DE & FR)
+## 🎨 一、 顶级设计 Skill 五大核心维度 (5 Luxury Core Principles)
 
-根据瑞士国情（德语区 & 法语区/双语城市如 Biel/Bienne），所有网站**必须原生提供德语 (DE) 与法语 (FR) 的无缝一键实时切换**：
+### 1. 非对称 Bento Grid 布局 (Asymmetrical Bento Architecture)
+- 严禁使用等宽、对齐的普通卡片网格。
+- 必须使用 **Bento Grid 模块分割**：
+  - **2x2 主张巨型卡**：承载品牌的核心价值、Google 5.0 信任勋章与实景图。
+  - **2x1 横向高光条**：承载即时 Callout（如 05:30 晨间烘焙 / 24/7 应急 Hotline）。
+  - **1x1 浮雕指标块**：承载毛玻璃高光数据（如 30 MIN 出勤 / 100% Natursauerteig）。
 
-1. **切换器位置**：位于 Header/Top bar 显著位置（`[ DE | FR ]` 切换开关）。
-2. **全页面文本覆盖**：全站所有 Layout 模块文本均针对 DE (Deutsch) 和 FR (Français) 进行了地道德法双语适配。
+### 2. 杂志级高端字阶系统 (Editorial Luxury Typography)
+- **标题 (Headings)**: 采用典雅高贵的 Serif 衬线体或超粗非对称大字（`font-serif tracking-tight leading-[1.05]`）。
+- **小标与 Tag (Kicker/Badges)**: 采用全大写、宽字距（`tracking-[0.2em] uppercase text-[11px]`）。
+- **正文 (Body)**: 纤细优雅、高舒适度行距（`font-light text-[#a1a1aa] leading-relaxed`）。
+
+### 3. 多层高斯模糊与双重浮雕边框 (Glassmorphism & Double Borders)
+- 背景使用 **Ambient Mesh Gradient (弥散光背景)**：
+  - 烘焙店：深焦糖/暗麦香渐变背景 + 柔和琥珀光晕 (`radial-gradient bg-amber-950/20 blur-3xl`)
+  - 美发沙龙：奢华炭黑/玫瑰粉弥散背景 (`radial-gradient bg-rose-950/30 blur-3xl`)
+  - 牙科诊所：深海医用蓝/湖蓝光晕 (`radial-gradient bg-cyan-950/30 blur-3xl`)
+  - 水暖工程：工业深蓝/警示橙光晕 (`radial-gradient bg-orange-950/20 blur-3xl`)
+  - 咖啡餐馆：意式浓缩暗色/金赭光晕 (`radial-gradient bg-stone-900 blur-3xl`)
+- 卡片使用 **`backdrop-blur-xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5`**，呈现浮雕透光质感。
+
+### 4. 动态气泡浮窗与细节打磨 (Floating Ambient Micro-Cards)
+- 在 Hero 主图四周悬浮带有高光阴影的 **Floating Glass Badges**（如：`★ 4.9 Verified Review` / `🇨🇭 100% Swiss Crafted`）。
+- Hover 悬浮浮雕效果：卡片悬浮时带光彩边缘移动 (`hover:border-amber-500/50 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1 transition-all duration-500`)。
+
+### 5. 🇨🇭 德法双语原生无缝转换 (Swiss Native Bilingual Engine)
+- 顶部导航栏配置高质感交互式 `[ DE (Deutsch) | FR (Français) ]` 动态 Pills 开关。
+- 全站所有的 Bento 卡片、大字标题、预约表单与服务卡片均原生地道覆盖德法语。
 
 ---
 
-## ⚙️ 三、 终极验证与部署标准 (Verification Standard)
+## 📐 二、 5 大行业非对称 Bento Grid 独立 Layout 架构
 
-1. **0 占位符原则**：全站必须嵌入高分辨率 Unsplash 真实商业大图。
-2. **100% 200 OK 响应**：SSR + CSR 混合架构，无 307 或 500 重定向异常。
+| 行业 | 视觉 Theme & 弥散背光 | Hero Bento 模块分割 | 专属去模板化细节 |
+| :--- | :--- | :--- | :--- |
+| 🥐 **Bäckerei** | Warm Amber & Baked Oats | **2x2 新鲜面包实景卡 + 2x1 05:30 晨间烘焙卡 + 1x1 酸面包 Badge** | 浮雕金麦勋章 + 传统烘焙温度提示 |
+| ✂️ **Coiffeur** | Haute Rose Gold & Luxe Onyx | **2x2 Lookbook 时尚杂志海报 + 2x1 Styling 价格表 + 1x1 VIP 咨询** | 纤细高雅线条 + Balayage 亮泽色阶表 |
+| 🦷 **Zahnarzt** | Swiss Medical Cyan & Pure Ice | **2x2 瑞士无菌诊室实景 + 2x1 无痛承诺卡 + 1x1 Swiss Dental 标准** | 医用蓝白微光 + 快捷挂号悬浮窗 |
+| 🛠️ **Sanitär** | Industrial Steel & Safety Orange | **2x2 24/7 应急抢修 Hero + 2x1 30 MIN 出勤看板 + 1x1 透明报价** | 橙色动能脉冲 + 施工质保印章 |
+| ☕️ **Café** | Dark Espresso & Champagne Accent | **2x2 Bistrot 特调咖啡 Hero + 2x1 主厨推荐 + 1x1 桌位预订卡** | 意式特调拉花视差 + 黑金菜单卡 |
