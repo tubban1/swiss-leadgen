@@ -104,9 +104,9 @@ graph TD
 
 | 阶段 (Stage) | 执行 Agent | 存入数据表 (Database Table) | 关键落存字段 (Stored Values) |
 | :--- | :--- | :--- | :--- |
-| **Stage 1: 商家发现** | Discovery Agent | `leads` | `id`, `name`, `subdomain`, `place_id`, `city` |
+| **Stage 1: 商家发现** | Discovery Agent | `leads` | `id`, `name`, `subdomain`, `place_id`, `admin_pass` (独一无二随机密码) |
 | **Stage 2: 信息富化** | Enrichment Agent | `lead_enrichments` | `reviews_json` (Google 真实客户评价), `photos_json` |
-| **Stage 3: 站点生成** | SiteBuilder Agent | `site_configs` | `config_json` (Bento 网格 UI 与配色 JSON) |
+| **Stage 3: 站点生成** | SiteBuilder Agent | `site_configs` | `config_json` (符合标准 Schema 的完整 JSON 数据) |
 | **Stage 4: Vercel 挂载**| Vercel Agent | `deployments` | `dns_verification` (原始 TXT `vc-domain-verify=...` 凭证) |
 | **Stage 5: GoDaddy 解析**| GoDaddy Agent | `deployments` | `cname_target` (`4486e1c3ac91a3bb.vercel-dns-017.com`), `godaddy_status` |
 
@@ -114,37 +114,48 @@ graph TD
 
 ## 🛠️ 3. 标准化固化工具集 (Production Tools)
 
-系统提供了两套生产级固化工具，支持单商家原子化测试与全量商家无缝上线：
+系统提供了生产级固化工具，支持单商家原子化测试与全量商家无缝上线：
 
 ### 3.1 单商家 1-by-1 标准化固化上线工具 (`tools/provision_single_merchant.py`)
 
-针对任意单一商家跑通 100% 闭环流转：
-
 ```bash
-# 固化运行命令：指定商家子域名或标识符
 python tools/provision_single_merchant.py sanitaer-express-seeland.sites.tubban.com
 ```
 
 ### 3.2 12 家商家全量凭证保全上线工具 (`tools/deploy_all_merchants_bulletproof.py`)
 
-一次性提取数据库全量凭证，解决 TXT 覆盖风险并向 GoDaddy 合并写入：
-
 ```bash
-# 固化运行命令：全量合并解析与 Vercel 打勾验证
 python tools/deploy_all_merchants_bulletproof.py
 ```
 
-### 3.3 Vercel 真实凭证审计工具 (`tools/inspect_vercel_real_domain.py`)
-
-直连 Vercel 官方 REST API 调取最真实的原生 Response Payload：
+### 3.3 商户 Admin 随机密码查询与生成工具
 
 ```bash
-python tools/inspect_vercel_real_domain.py backerei-muller.tubban.com
+# 查询全量商户的 Admin 随机密码与后台 URL
+python tools/inspect_merchant_admin_passwords.py
+
+# 重新生成并更新落存高强度随机密码
+python tools/generate_random_admin_passwords.py
 ```
 
 ---
 
-## 🔒 4. GoDaddy 与 Vercel 凭证全量保全机制
+## 🔑 4. 商户专属 Admin 后台与实时编辑机制 (Merchant Admin Portal)
+
+每一个动态多租户站点（例如 `https://backerei-muller.tubban.com`）均配备独立管理后台：
+
+1. **访问入口**：访问 `https://<subdomain>/admin`（如 `https://backerei-muller.tubban.com/admin`）。
+2. **随机密码鉴权**：
+   * 在 Neon PostgreSQL 数据库 `leads` 表的 `admin_pass` 字段中存储独一无二的高强度随机密码（如 `ZZqv0GLKCEBH`）。
+   * 未登录时显示 Dark Glassmorphism 登录卡片，校验通过后进入 Dashboard。
+3. **内容在线修改与实时发布 (Live Publishing)**：
+   * **Visual Content Builder**：可视化编辑 Hero 标题（德/法语）、SubTitle、联系电话、邮箱等。
+   * **Standard Schema JSON Editor**：直接在线编辑完整符合标准 JSON Schema 的配置。
+   * **保存与实时落存**：点击 "Save & Live Publish 🚀" 调用 `/api/site/admin/update`，最新 `site_config` 将无缝保存至数据库 `site_configs` 表中并实时生效。
+
+---
+
+## 🔒 5. GoDaddy 与 Vercel 凭证全量保全机制
 
 1. **CNAME 解析**：
    统一写入 Vercel 推荐的特化 Anycast 目标：
