@@ -3,9 +3,12 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl;
-  const hostname = req.headers.get('host') || req.nextUrl.hostname || '';
+  
+  // 核心：优先从 Vercel Edge 网关的 x-forwarded-host 抓取真实的通配符子域名
+  const rawHost = req.headers.get('x-forwarded-host') || req.headers.get('host') || req.nextUrl.hostname || '';
+  const hostname = rawHost.split(':')[0]; // 清除可能包含的端口号
 
-  // 1. 静态资源、内部 API 路由以及已经重写过的 /site 路径直接放行（关键防死循环）
+  // 1. 静态资源、API、已重写的 site 路径豁免
   if (
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api') ||
@@ -15,7 +18,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. 提取子域名前缀 (如 cafe-bellevue.sites.tubban.com -> cafe-bellevue)
+  // 2. 精准提取子域名前缀 (如 cafe-bellevue.sites.tubban.com -> cafe-bellevue)
   let subdomain = '';
   if (hostname.includes('.sites.tubban.com')) {
     subdomain = hostname.replace('.sites.tubban.com', '');
@@ -23,7 +26,7 @@ export function middleware(req: NextRequest) {
     subdomain = hostname.replace('.tubban.com', '');
   }
 
-  // 3. 主站 / Admin 后台无缝放行
+  // 3. 根站点 / Admin 后台无缝路由
   if (!subdomain || subdomain === 'sites' || subdomain === 'admin' || hostname.includes('vercel.app')) {
     if (url.pathname === '/') {
       url.pathname = '/admin/dashboard';
@@ -32,7 +35,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 4. 将子域名无缝重写映射至 /site/[domain] 动态页面
+  // 4. 重写映射至 /site/[domain] 动态多租户页面
   const cleanPath = url.pathname === '/' ? '' : url.pathname;
   url.pathname = `/site/${subdomain}${cleanPath}`;
   return NextResponse.rewrite(url);
