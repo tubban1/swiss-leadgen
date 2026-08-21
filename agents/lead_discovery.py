@@ -1,7 +1,7 @@
 """
 Lead Discovery Agent — Playwright 直接抓取 Google Maps
 完全免费，无需任何 API Key
-需要安装: pip install playwright && playwright install chromium
+提取包含商家名称、地址、电话、Google 评分、评价数、以及真实客户评语摘录
 """
 import asyncio
 import re
@@ -19,7 +19,7 @@ NOT_REAL_WEBSITE = [
 
 
 async def _scrape_city_category(page, city: dict, category: dict, max_results: int = 20) -> list:
-    """抓取一个城市×行业的 Google Maps 结果"""
+    """抓取一个城市×行业的 Google Maps 结果及真实用户评价"""
     query = f'{category["type"]} {city["name"]} Switzerland'
     url = f"https://www.google.com/maps/search/{query.replace(' ', '+')}"
 
@@ -58,11 +58,11 @@ async def _scrape_city_category(page, city: dict, category: dict, max_results: i
                 review_text = await review_el.first.inner_text() if await review_el.count() > 0 else "0"
                 reviews = int(re.sub(r"[^\d]", "", review_text)) if re.sub(r"[^\d]", "", review_text) else 0
 
-                # 过滤
+                # 过滤高分商家
                 if rating < LEAD_FILTER_MIN_RATING or reviews < LEAD_FILTER_MIN_REVIEWS:
                     continue
 
-                # 网站
+                # 网站检测
                 website_el = page.locator('a[data-item-id="authority"], a[href*="http"][aria-label*="ite"]')
                 website = await website_el.first.get_attribute("href") if await website_el.count() > 0 else ""
 
@@ -78,10 +78,15 @@ async def _scrape_city_category(page, city: dict, category: dict, max_results: i
                 phone_el = page.locator('button[data-item-id*="phone"]')
                 phone = await phone_el.first.inner_text() if await phone_el.count() > 0 else ""
 
-                # 当前 URL (Google Maps URL)
-                maps_url = page.url
+                # 提取真实客户好评摘录 (Top 2 评语)
+                review_snippets = []
+                review_nodes = await page.locator('div.My5sp, span.wife1e, div.DU29qf').all()
+                for node in review_nodes[:2]:
+                    txt = await node.inner_text()
+                    if txt and len(txt) > 15:
+                        review_snippets.append(txt.strip().replace("\n", " "))
 
-                # Place ID from URL
+                maps_url = page.url
                 place_id_match = re.search(r"1s([^!]+)!2s", maps_url)
                 place_id = place_id_match.group(1) if place_id_match else f"{name}_{city['name']}"
 
@@ -99,6 +104,7 @@ async def _scrape_city_category(page, city: dict, category: dict, max_results: i
                     "website_hint": website,
                     "rating": rating,
                     "review_count": reviews,
+                    "review_snippets": review_snippets,
                     "google_maps_url": maps_url,
                     "slug": make_slug(name.strip()),
                 })
@@ -130,7 +136,6 @@ async def _run_discovery(max_per_run: int = 50) -> int:
         )
         page = await context.new_page()
 
-        # 同意 Google Cookie（如果出现）
         try:
             await page.goto("https://www.google.com/maps", timeout=15000)
             accept = page.locator('button:has-text("Accept all"), button:has-text("Alle akzeptieren")')
@@ -142,7 +147,7 @@ async def _run_discovery(max_per_run: int = 50) -> int:
 
         for city in SWISS_CITIES:
             for category in BUSINESS_CATEGORIES:
-                print(f"   🔍 {city['name']} × {category['type']}")
+                print(f"   🔍 抓取: {city['name']} × {category['type']}")
                 places = await _scrape_city_category(page, city, category)
 
                 for place in places:
@@ -155,7 +160,7 @@ async def _run_discovery(max_per_run: int = 50) -> int:
                         await browser.close()
                         return new_count
 
-                await asyncio.sleep(2)  # 城市间延迟，避免被封
+                await asyncio.sleep(2)
 
         await browser.close()
 
@@ -164,8 +169,7 @@ async def _run_discovery(max_per_run: int = 50) -> int:
 
 class LeadDiscoveryAgent:
     def discover(self, max_per_run: int = 50) -> int:
-        """同步入口（内部使用 asyncio）"""
-        print(f"\n🔍 开始 Lead Discovery (Playwright 免费抓取)...")
+        print(f"\n🔍 开始 Lead Discovery (Playwright 全量数据抓取)...")
         n = asyncio.run(_run_discovery(max_per_run))
         print(f"\n🏁 Discovery 完成，新增 {n} 个 leads")
         return n
