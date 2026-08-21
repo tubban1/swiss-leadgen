@@ -16,7 +16,8 @@ import {
   MailWarning, 
   FileText,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 
 interface Lead {
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
       setLoading(true);
       const res = await fetch('/api/admin/leads');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.leads)) {
         setLeads(data.leads);
       }
     } catch (err) {
@@ -63,6 +64,19 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCleanUrl = (subdomainStr: string, name: string) => {
+    if (!subdomainStr) {
+      const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+      return `https://${slug}.sites.tubban.com`;
+    }
+    let clean = subdomainStr.replace('https://', '').replace('http://', '');
+    if (!clean.includes('.sites.tubban.com')) {
+      clean = clean.replace('.tubban.com', '');
+      clean = `${clean}.sites.tubban.com`;
+    }
+    return `https://${clean}`;
   };
 
   const filteredLeads = leads.filter(
@@ -74,10 +88,9 @@ export default function AdminDashboard() {
 
   const totalLeads = leads.length;
   const deployedLeads = leads.filter((l) => l.is_published || l.status === 'deployed').length;
-  const hasEmailCount = leads.filter((l) => l.email).length;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6 md:p-10">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 md:p-8">
       {/* ── Header ────────────────────────────────────────────── */}
       <header className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
@@ -96,189 +109,144 @@ export default function AdminDashboard() {
             onClick={fetchLeads}
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-lg transition-colors border border-slate-700 flex items-center gap-2"
           >
-            <RefreshCw className="w-4 h-4 text-blue-400" />
+            <RefreshCw className={`w-4 h-4 text-blue-400 ${loading ? 'animate-spin' : ''}`} />
             <span>Daten aktualisieren</span>
           </button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-8">
-        {/* ── Stats ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-5 bg-slate-900/80 rounded-2xl border border-slate-800/80 shadow-lg">
-            <div className="text-sm font-medium text-slate-400 flex items-center justify-between mb-2">
-              <span>Erfasste Unternehmen</span>
-              <Building2 className="w-4 h-4 text-blue-400" />
-            </div>
-            <div className="text-3xl font-extrabold text-white">{totalLeads}</div>
+      {/* ── Stats Bar ──────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Erfasste Leads</p>
+            <p className="text-3xl font-extrabold text-white mt-1">{totalLeads}</p>
           </div>
-          <div className="p-5 bg-slate-900/80 rounded-2xl border border-slate-800/80 shadow-lg">
-            <div className="text-sm font-medium text-slate-400 flex items-center justify-between mb-2">
-              <span>Generierte Websites</span>
-              <Globe className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="text-3xl font-extrabold text-emerald-400">{deployedLeads}</div>
-          </div>
-          <div className="p-5 bg-slate-900/80 rounded-2xl border border-slate-800/80 shadow-lg">
-            <div className="text-sm font-medium text-slate-400 flex items-center justify-between mb-2">
-              <span>E-Mail-Kontakte vorhanden</span>
-              <Mail className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="text-3xl font-extrabold text-purple-400">{hasEmailCount}</div>
+          <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
+            <Building2 className="w-6 h-6" />
           </div>
         </div>
 
-        {/* ── Search ──────────────────────────────────────────── */}
-        <div className="flex items-center gap-4 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
-          <Search className="w-5 h-5 text-slate-400 ml-2" />
+        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Aktive Webseiten</p>
+            <p className="text-3xl font-extrabold text-emerald-400 mt-1">{deployedLeads}</p>
+          </div>
+          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+            <Globe className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Schweizer Regionen</p>
+            <p className="text-3xl font-extrabold text-purple-400 mt-1">ZH / GE / BE</p>
+          </div>
+          <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
+            <MapPin className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Search & Filter ────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-96">
+          <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Unternehmen, Stadt oder Branche suchen..."
+            placeholder="Suche nach Name, Stadt (z.B. Biel) oder Kategorie..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent border-none text-slate-100 placeholder-slate-500 focus:outline-none text-sm w-full"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
-
-        {/* ── Content Grid / Cards ───────────────────────────── */}
-        {loading ? (
-          <div className="text-center py-20 text-slate-500">Lade Unternehmensdaten aus der Datenbank...</div>
-        ) : filteredLeads.length === 0 ? (
-          <div className="text-center py-20 bg-slate-900/40 rounded-2xl border border-slate-800 text-slate-400">
-            Keine passenden Unternehmensdaten gefunden.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {filteredLeads.map((lead) => {
-              // 自动将 subdomain 纠正并清洗提取为 https://${slug}.sites.tubban.com
-              const cleanSlug = (lead.subdomain || lead.name || '')
-                .replace('.sites.tubban.com', '')
-                .replace('.tubban.com', '')
-                .toLowerCase()
-                .replace(/[^a-z0-9]/g, '-');
-
-              const websiteUrl = `https://${cleanSlug}.sites.tubban.com`;
-
-              return (
-                <div
-                  key={lead.id}
-                  className="bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 transition-all shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6"
-                >
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h2 className="text-lg font-bold text-white">{lead.name}</h2>
-                      <span className="px-2.5 py-0.5 text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md uppercase">
-                        {lead.category || 'Gewerbe'}
-                      </span>
-                      <span className="px-2.5 py-0.5 text-xs font-semibold bg-slate-800 text-slate-300 rounded-md">
-                        {lead.city} ({lead.canton})
-                      </span>
-                      {lead.rating && (
-                        <div className="flex items-center gap-1 text-xs text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md">
-                          <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span>{lead.rating}</span>
-                          <span className="text-slate-400">({lead.review_count || 12} Bewertungen)</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs text-slate-400">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span className="truncate">{lead.address || `${lead.city}, Schweiz`}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span>{lead.phone || 'Keine Telefonnummer'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                        <span className={lead.email ? 'text-purple-300 font-medium' : 'text-slate-500'}>
-                          {lead.email || 'Keine E-Mail angegeben'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions & Passwords */}
-                  <div className="flex items-center gap-3 flex-wrap md:flex-nowrap border-t md:border-t-0 border-slate-800 pt-4 md:pt-0">
-                    <div className="bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 text-xs flex items-center gap-2">
-                      <Key className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-slate-400">Admin-Passwort:</span>
-                      <code className="text-amber-300 font-mono font-bold">{lead.admin_pass || 'YP9BR2YX'}</code>
-                    </div>
-
-                    {lead.email_body && (
-                      <button
-                        onClick={() => setSelectedLead(lead)}
-                        className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors border border-slate-700 flex items-center gap-1.5"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-blue-400" />
-                        <span>E-Mail-Entwurf</span>
-                      </button>
-                    )}
-
-                    <a
-                      href={websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center gap-1.5 shrink-0"
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>Website öffnen</span>
-                      <ExternalLink className="w-3 h-3 opacity-70" />
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
-
-      {/* ── Draft Modal ─────────────────────────────────────── */}
-      {selectedLead && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div>
-                <h3 className="font-bold text-lg text-white">E-Mail-Entwurf Vorschau</h3>
-                <p className="text-xs text-slate-400">Empfänger: {selectedLead.name} ({selectedLead.email || 'Keine E-Mail'})</p>
-              </div>
-              <button
-                onClick={() => setSelectedLead(null)}
-                className="text-slate-400 hover:text-white text-sm px-2 py-1 bg-slate-800 rounded-lg"
-              >
-                Schliessen
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400">Betreff:</label>
-              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-sm font-semibold text-slate-200">
-                {selectedLead.email_subject || 'Neue Website-Erstellung für Ihr Unternehmen'}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400">E-Mail-Inhalt (HTML-Entwurf):</label>
-              <div
-                className="p-4 bg-white text-slate-900 rounded-xl max-h-96 overflow-y-auto text-sm"
-                dangerouslySetInnerHTML={{ __html: selectedLead.email_body || '<p>Kein Inhalt</p>' }}
-              />
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setSelectedLead(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
-              >
-                Fertig
-              </button>
-            </div>
-          </div>
+        <div className="text-xs text-slate-400 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span>Zeige {filteredLeads.length} von {totalLeads} Einträgen</span>
         </div>
-      )}
+      </div>
+
+      {/* ── Main Leads Table ───────────────────────────────────── */}
+      <main className="max-w-7xl mx-auto">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          {loading ? (
+            <div className="p-16 text-center text-slate-400 space-y-3">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-400" />
+              <p className="text-sm">Lade Schweizer Lead-Datenbank...</p>
+            </div>
+          ) : filteredLeads.length === 0 ? (
+            <div className="p-16 text-center text-slate-400">
+              <p>Keine Einträge gefunden.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 text-xs uppercase tracking-wider font-semibold">
+                    <th className="py-4 px-6">Unternehmensname</th>
+                    <th className="py-4 px-6">Kategorie</th>
+                    <th className="py-4 px-6">Standort & Region</th>
+                    <th className="py-4 px-6">Bewertung</th>
+                    <th className="py-4 px-6">Status & Subdomain</th>
+                    <th className="py-4 px-6 text-right">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredLeads.map((lead) => {
+                    const targetUrl = getCleanUrl(lead.subdomain, lead.name);
+                    return (
+                      <tr key={lead.id} className="hover:bg-slate-800/40 transition-colors group">
+                        <td className="py-4 px-6">
+                          <div className="font-semibold text-white group-hover:text-blue-400 transition-colors flex items-center gap-2">
+                            <span>{lead.name}</span>
+                          </div>
+                          <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+                            <Phone className="w-3 h-3" />
+                            <span>{lead.phone || 'Keine Telefonnummer'}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700/80">
+                            {lead.category || 'Gewerbe'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="text-slate-200 font-medium">{lead.city} ({lead.canton})</div>
+                          <div className="text-xs text-slate-500 truncate max-w-xs">{lead.address}</div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-1 text-amber-400 font-semibold">
+                            <Star className="w-4 h-4 fill-amber-400" />
+                            <span>{Number(lead.rating || 4.5).toFixed(1)}</span>
+                            <span className="text-xs text-slate-500 font-normal">({lead.review_count})</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span className="text-xs font-mono text-emerald-400 font-semibold">{lead.subdomain}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <a
+                            href={targetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition-all shadow-md shadow-blue-600/20"
+                          >
+                            <span>Website öffnen</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

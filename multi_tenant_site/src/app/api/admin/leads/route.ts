@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   const databaseUrl = process.env.DATABASE_URL;
 
@@ -11,18 +14,22 @@ export async function GET() {
   try {
     const sql = neon(databaseUrl);
     
-    // 获取所有 leads
+    // 安全获取所有 unique leads
     const leads = await sql`
-      SELECT l.*, 
-             e.subject as email_subject, 
-             e.body_html as email_body,
-             e.type as email_type
+      SELECT l.id, l.name, l.category, l.address, l.city, l.canton, l.language,
+             l.email, l.phone, l.rating, l.review_count, l.subdomain, l.admin_pass,
+             l.status, l.is_published, l.created_at,
+             (SELECT subject FROM email_log WHERE lead_id = l.id ORDER BY sent_at DESC LIMIT 1) as email_subject,
+             (SELECT body_html FROM email_log WHERE lead_id = l.id ORDER BY sent_at DESC LIMIT 1) as email_body,
+             (SELECT type FROM email_log WHERE lead_id = l.id ORDER BY sent_at DESC LIMIT 1) as email_type
       FROM leads l
-      LEFT JOIN email_log e ON l.id = e.lead_id
       ORDER BY l.created_at DESC;
     `;
 
-    return NextResponse.json({ success: true, leads });
+    // 确保格式化为纯 JavaScript 简单类型
+    const cleanLeads = JSON.parse(JSON.stringify(leads));
+
+    return NextResponse.json({ success: true, leads: cleanLeads });
   } catch (error: any) {
     console.error('Fetch leads error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
