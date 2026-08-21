@@ -21,8 +21,9 @@ async function getLeadBySlug(slug: string) {
       .replace('.sites.tubban.com', '')
       .replace('.tubban.com', '');
 
+    // 从 4 表整合视图 v_leads_full 中联表获取强中间态与 site_config
     const rows = await sql`
-      SELECT * FROM leads 
+      SELECT * FROM v_leads_full 
       WHERE subdomain ILIKE ${'%' + cleanSlug + '%'} 
          OR name ILIKE ${'%' + cleanSlug.replace(/-/g, ' ') + '%'}
          OR slug ILIKE ${'%' + cleanSlug + '%'}
@@ -30,7 +31,14 @@ async function getLeadBySlug(slug: string) {
     `;
 
     if (rows.length > 0) {
-      return JSON.parse(JSON.stringify(rows[0]));
+      const row = rows[0];
+      if (row.site_config && typeof row.site_config === 'string') {
+        try { row.site_config = JSON.parse(row.site_config); } catch (e) {}
+      }
+      if (row.reviews_data && typeof row.reviews_data === 'string') {
+        try { row.reviews_data = JSON.parse(row.reviews_data); } catch (e) {}
+      }
+      return JSON.parse(JSON.stringify(row));
     }
     return null;
   } catch (err) {
@@ -51,8 +59,10 @@ export default async function TenantPage({ params }: Props) {
   const address = leadData?.address || `${city}, Schweiz`;
   const phone = leadData?.phone || '+41 32 320 00 00';
   const email = leadData?.email || `kontakt@${rawSlug}.ch`;
-  const rating = leadData?.rating ? Number(leadData.rating).toFixed(1) : '4.8';
-  const reviewCount = leadData?.review_count || 68;
+  const rating = leadData?.rating ? Number(leadData.rating).toFixed(1) : '4.9';
+  const reviewCount = leadData?.review_count || 42;
+  const siteConfig = leadData?.site_config || null;
+  const reviewsData = leadData?.reviews_data || siteConfig?.reviews || [];
 
   return (
     <DynamicTenantView
@@ -65,6 +75,8 @@ export default async function TenantPage({ params }: Props) {
       email={email}
       rating={rating}
       reviewCount={reviewCount}
+      siteConfig={siteConfig}
+      reviewsData={reviewsData}
     />
   );
 }

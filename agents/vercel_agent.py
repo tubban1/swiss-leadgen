@@ -1,93 +1,97 @@
 """
-Vercel Agent — 域名自动化管理与所有权校验模块
-使用 Vercel REST API 自动向 Vercel 多租户项目添加域名，提取验证所需的 TXT/CNAME 动态 Value，并触发自动校验
+Vercel Agent — 自动化管理域名挂载、动态凭证提取 (TXT Value) 与所有权验证
 """
 import requests
-import os
-from config import VERCEL_TOKEN, VERCEL_TEAM_ID, VERCEL_PROJECT_ID
-
-VERCEL_API_BASE = "https://api.vercel.com"
+from config import VERCEL_TOKEN, VERCEL_PROJECT_ID
 
 
 class VercelAgent:
-    def __init__(self, project_id: str = None):
-        self.project_id = project_id or VERCEL_PROJECT_ID or "multi_tenant_site"
+    def __init__(self):
         self.token = VERCEL_TOKEN
-        self.team_id = VERCEL_TEAM_ID
-
+        self.project_id = VERCEL_PROJECT_ID
+        self.base_url = "https://api.vercel.com"
         self.headers = {
             "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
         }
 
     def add_or_get_domain(self, domain_name: str) -> dict:
         """
-        向 Vercel 项目添加域名，并提取 Vercel 返回的独有所有权验证凭证 (TXT Value)
-        返回包含 verified 状态与 verification 信息的字典
+        在 Vercel 指定 Project 下挂载或获取域名，并提取精准 Verification 凭证 (TXT Value)
         """
-        if not self.token:
-            print(f"   ℹ️ [Vercel API] 未配置 VERCEL_TOKEN，返回模拟数据")
-            return {"verified": True, "verification": []}
-
-        url = f"{VERCEL_API_BASE}/v9/projects/{self.project_id}/domains"
-        if self.team_id:
-            url += f"?teamId={self.team_id}"
-
+        url = f"{self.base_url}/v9/projects/{self.project_id}/domains"
         payload = {"name": domain_name}
-        print(f"   🚀 [Vercel API] 挂载 / 查询自定义域名 ➔ {domain_name} (Project: {self.project_id})")
 
-        try:
-            r = requests.post(url, headers=self.headers, json=payload, timeout=15)
-            data = r.json()
-
-            # 如果已经存在 (409 Conflict)，再次 GET 获取域名详情
-            if r.status_code == 409 or "error" in data:
-                get_url = f"{VERCEL_API_BASE}/v9/projects/{self.project_id}/domains/{domain_name}"
-                if self.team_id:
-                    get_url += f"?teamId={self.team_id}"
-                r_get = requests.get(get_url, headers=self.headers, timeout=15)
-                data = r_get.json()
-
-            verified = data.get("verified", False)
-            verification = data.get("verification", [])
-
-            print(f"   📊 [Vercel API] 域名状态: verified={verified}")
-            if verification:
-                for item in verification:
-                    print(f"      📌 提取验证凭证 -> Type: {item.get('type')}, Target: {item.get('domain')}, Value: {item.get('value')}")
-
-            return {
-                "name": domain_name,
-                "verified": verified,
-                "verification": verification,
-                "raw": data
-            }
-        except Exception as e:
-            print(f"   ❌ [Vercel API] 请求异常: {e}")
-            return {"verified": False, "verification": []}
+        # 尝试新增挂载
+        res = requests.post(url, headers=self.headers, json=payload)
+        
+        if res.status_code == 200:
+            data = res.json()
+            print(f"   🚀 [Vercel API] 成功挂载自定义域名 ➔ {domain_name}")
+            return self._parse_domain_response(data)
+        
+        elif res.status_code == 409: # 域名已存在，查询已存在的域名状态与验证凭证
+            get_url = f"{self.base_url}/v9/projects/{self.project_id}/domains/{domain_name}"
+            get_res = requests.get(get_url, headers=self.headers)
+            if get_res.status_code == 200:
+                data = get_res.json()
+                print(f"   ℹ️ [Vercel API] 域名已存在，获取现有配置 ➔ {domain_name}")
+                return self._parse_domain_response(data)
+            else:
+                print(f"   ⚠️ [Vercel API] 查询域名失败 [{get_res.status_code}]: {get_res.text}")
+                return {"domain": domain_name, "verified": False, "verification": []}
+        else:
+            print(f"   ⚠️ [Vercel API] 挂载域名失败 [{res.status_code}]: {res.text}")
+            return {"domain": domain_name, "verified": False, "verification": []}
 
     def verify_domain(self, domain_name: str) -> bool:
         """
-        DNS 在 GoDaddy 写入后，触发 Vercel 域名所有权校验
+        触发 Vercel 对指定域名的所有权与 DNS 规则验证
         """
-        if not self.token:
-            return True
-
-        url = f"{VERCEL_API_BASE}/v9/projects/{self.project_id}/domains/{domain_name}/verify"
-        if self.team_id:
-            url += f"?teamId={self.team_id}"
-
-        print(f"   🔄 [Vercel API] 触发所有权自动校验 ➔ {domain_name}")
-        try:
-            r = requests.post(url, headers=self.headers, timeout=15)
-            res = r.json()
-            verified = res.get("verified", False)
-            if verified:
-                print(f"   🎉 [Vercel API] 域名成功通过校验并激活上线: {domain_name}")
-                return True
+        url = f"{self.base_url}/v9/projects/{self.project_id}/domains/{domain_name}/verify"
+        res = requests.post(url, headers=self.headers)
+        
+        if res.status_code == 200:
+            data = res.json()
+            is_verified = data.get("verified", False)
+            if is_verified:
+                print(f"   🎉 [Vercel API] 域名所有权与 DNS 校验成功！➔ {domain_name}")
             else:
                 print(f"   ℹ️ [Vercel API] 域名校验准备中 (等待 DNS 传播生效)...")
-                return False
-        except Exception as e:
-            print(f"   ❌ [Vercel API] 校验请求异常: {e}")
+            return is_verified
+        else:
+            print(f"   ⚠️ [Vercel API] 校验请求触发完毕 [{res.status_code}]")
             return False
+
+    def remove_domain(self, domain_name: str) -> bool:
+        """
+        从 Vercel 项目中解绑删除域名
+        """
+        url = f"{self.base_url}/v9/projects/{self.project_id}/domains/{domain_name}"
+        res = requests.delete(url, headers=self.headers)
+        if res.status_code in (200, 204):
+            print(f"   🗑️ [Vercel API] 已成功卸载/解绑域名 ➔ {domain_name}")
+            return True
+        else:
+            print(f"   ⚠️ [Vercel API] 解绑域名失败 [{res.status_code}]: {res.text}")
+            return False
+
+    def _parse_domain_response(self, data: dict) -> dict:
+        """
+        提取 Vercel 响应数据中的验证凭证 (TXT Value)
+        """
+        domain = data.get("name", "")
+        verified = data.get("verified", False)
+        verification = data.get("verification", [])
+        
+        # 打印提取到的关键 TXT Value 凭证
+        if verification:
+            for item in verification:
+                print(f"      📌 提取验证凭证 -> Type: {item.get('type')}, Target: {item.get('domain')}, Value: {item.get('value')}")
+        
+        return {
+            "domain": domain,
+            "verified": verified,
+            "verification": verification,
+            "raw": data
+        }
