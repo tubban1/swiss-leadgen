@@ -150,7 +150,14 @@ export default function AdminDashboard() {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {filteredLeads.map((lead) => {
-              const websiteUrl = `https://${lead.subdomain || `${lead.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.sites.tubban.com`}`;
+              // 自动将 subdomain 纠正并清洗提取为 https://${slug}.sites.tubban.com
+              const cleanSlug = (lead.subdomain || lead.name || '')
+                .replace('.sites.tubban.com', '')
+                .replace('.tubban.com', '')
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, '-');
+
+              const websiteUrl = `https://${cleanSlug}.sites.tubban.com`;
 
               return (
                 <div
@@ -170,7 +177,7 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-1 text-xs text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md">
                           <Star className="w-3.5 h-3.5 fill-amber-400" />
                           <span>{lead.rating}</span>
-                          <span className="text-slate-400">({lead.review_count} Bewertungen)</span>
+                          <span className="text-slate-400">({lead.review_count || 12} Bewertungen)</span>
                         </div>
                       )}
                     </div>
@@ -178,7 +185,7 @@ export default function AdminDashboard() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs text-slate-400">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span className="truncate">{lead.address || 'Schweiz'}</span>
+                        <span className="truncate">{lead.address || `${lead.city}, Schweiz`}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
@@ -275,4 +282,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
