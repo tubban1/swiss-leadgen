@@ -23,7 +23,12 @@ import {
   Check,
   ShieldAlert,
   ArrowUpRight,
-  Flame
+  Flame,
+  UserCheck,
+  HeartHandshake,
+  Zap,
+  MessageSquare,
+  ThumbsUp
 } from 'lucide-react';
 
 interface TenantProps {
@@ -40,12 +45,12 @@ interface TenantProps {
 
 function LangSwitcher({ lang, setLang }: { lang: 'de' | 'fr'; setLang: (l: 'de' | 'fr') => void }) {
   return (
-    <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-xl px-3 py-1 rounded-full border border-white/10 ring-1 ring-white/5">
+    <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-2xl px-3 py-1 rounded-full border border-white/10 ring-1 ring-white/10 shadow-2xl">
       <Languages className="w-3.5 h-3.5 text-zinc-400" />
       <button
         onClick={() => setLang('de')}
         className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${
-          lang === 'de' ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/20' : 'text-zinc-400 hover:text-zinc-200'
+          lang === 'de' ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/30' : 'text-zinc-400 hover:text-zinc-200'
         }`}
       >
         DE
@@ -54,7 +59,7 @@ function LangSwitcher({ lang, setLang }: { lang: 'de' | 'fr'; setLang: (l: 'de' 
       <button
         onClick={() => setLang('fr')}
         className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${
-          lang === 'fr' ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/20' : 'text-zinc-400 hover:text-zinc-200'
+          lang === 'fr' ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/30' : 'text-zinc-400 hover:text-zinc-200'
         }`}
       >
         FR
@@ -75,6 +80,15 @@ export default function DynamicTenantView({
   reviewCount
 }: TenantProps) {
   const [lang, setLang] = useState<'de' | 'fr'>('de');
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [formData, setFormData] = useState({ name: '', phone: '', note: '' });
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.name && formData.phone) {
+      setFormSubmitted(true);
+    }
+  };
 
   // 高精商业实景图库
   const images = {
@@ -131,7 +145,7 @@ export default function DynamicTenantView({
           <LangSwitcher lang={lang} setLang={setLang} />
         </div>
 
-        {/* Floating Glass Header */}
+        {/* Header */}
         <header className="border-b border-white/10 bg-[#0f0c09]/80 backdrop-blur-2xl sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -148,9 +162,9 @@ export default function DynamicTenantView({
         </header>
 
         {/* Hero Section: Asymmetrical Bento Grid */}
-        <section className="py-16 px-6 max-w-7xl mx-auto">
+        <section className="py-16 px-6 max-w-7xl mx-auto space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            {/* Bento Card 1: 2x2 Main Headline Card */}
+            {/* Bento 2x2 Main Card */}
             <div className="lg:col-span-7 backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl space-y-8 flex flex-col justify-between relative overflow-hidden group">
               <div className="space-y-6 relative z-10">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-semibold">
@@ -165,7 +179,7 @@ export default function DynamicTenantView({
                 </p>
               </div>
 
-              {/* Verified Badge */}
+              {/* Verified Rating Row */}
               <div className="pt-6 border-t border-white/10 flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center font-bold text-sm">
@@ -176,27 +190,46 @@ export default function DynamicTenantView({
                     <div className="text-xs text-amber-200/60">{reviewCount} {lang === 'de' ? 'echte Kundenbewertungen' : 'avis clients vérifiés'}</div>
                   </div>
                 </div>
-                <a href="#contact" className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-amber-400 hover:underline">
-                  <span>{lang === 'de' ? 'Anfragen' : 'Contact'}</span>
+                <a href="#booking" className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-amber-400 hover:underline">
+                  <span>{lang === 'de' ? 'Vorbestellen' : 'Commander'}</span>
                   <ArrowUpRight className="w-4 h-4" />
                 </a>
               </div>
             </div>
 
-            {/* Bento Card 2: High-Res Hero Image Card with Floating Badge */}
+            {/* Bento Card 2: Image & Badge */}
             <div className="lg:col-span-5 relative rounded-3xl overflow-hidden border border-white/10 ring-1 ring-white/5 min-h-[380px] group">
               <img src={imgSet.hero} alt="Bakery" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-              {/* Floating Badge */}
-              <div className="absolute bottom-6 left-6 right-6 p-4 rounded-2xl backdrop-blur-xl bg-black/70 border border-white/10 ring-1 ring-white/5">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6 p-5 rounded-2xl backdrop-blur-xl bg-black/80 border border-white/10 ring-1 ring-white/5 space-y-1">
                 <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Ofenfrisch Garant</span>
-                <p className="text-sm font-serif font-bold text-amber-100 mt-0.5">{name} · {city}</p>
+                <p className="text-sm font-serif font-bold text-amber-100">{name} · {city}</p>
+                <p className="text-xs text-zinc-400">{address}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Bento Sub-Row: 2x1 Callout + 1x1 Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 backdrop-blur-xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-6 rounded-3xl flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="text-xs text-amber-400 font-mono font-bold uppercase">{lang === 'de' ? 'Frühaufsteher-Service' : 'Service Lève-Tôt'}</div>
+                <div className="text-lg font-serif font-bold text-white">{lang === 'de' ? 'Ofenwarme Gipfeli ab 05:30 Uhr' : 'Croissants chauds dès 05h30'}</div>
+              </div>
+              <div className="text-2xl font-mono font-black text-amber-400">05:30 AM</div>
+            </div>
+
+            <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-6 rounded-3xl flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="text-xs text-zinc-400 font-mono">{lang === 'de' ? 'Schweizer Butter' : 'Beurre Pur'}</div>
+                <div className="text-lg font-serif font-bold text-amber-100">100% Regionale Zutaten</div>
+              </div>
+              <CheckCircle2 className="w-8 h-8 text-amber-400" />
             </div>
           </div>
         </section>
 
-        {/* Asymmetrical Bento Product Cards */}
+        {/* Asymmetrical Bento Products */}
         <section className="py-16 max-w-7xl mx-auto px-6 space-y-8">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-amber-100">{lang === 'de' ? 'Unsere Handwerks-Spezialitäten' : 'Nos Spécialités Artisanales'}</h2>
@@ -230,19 +263,73 @@ export default function DynamicTenantView({
           </div>
         </section>
 
-        {/* Contact Bento Card */}
-        <section id="contact" className="py-16 max-w-7xl mx-auto px-6">
-          <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h3 className="text-2xl font-serif font-bold text-amber-100">{address}</h3>
-              <p className="text-sm text-amber-200/70">Tel: {phone}</p>
-              <p className="text-sm text-amber-200/70">Email: {email}</p>
+        {/* Lead Capture Form Bento */}
+        <section id="booking" className="py-16 max-w-7xl mx-auto px-6">
+          <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-6 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-semibold rounded-full">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{lang === 'de' ? 'Brote & Gebäck Vorbestellen' : 'Réservation en ligne'}</span>
+              </div>
+              <h3 className="text-3xl font-serif font-bold text-white leading-tight">
+                {lang === 'de' ? 'Holen Sie Ihre Bestellung ohne Wartezeit ab' : 'Commandez et évitez l\'attente en magasin'}
+              </h3>
+              <p className="text-sm text-amber-200/70 leading-relaxed">
+                {address} · Tel: {phone}
+              </p>
+              <div className="space-y-2 text-xs text-amber-200/70 border-t border-white/10 pt-4">
+                <div className="font-bold text-amber-400 uppercase tracking-wider">{lang === 'de' ? 'Öffnungszeiten' : 'Heures d\'ouverture'}</div>
+                <div>Mo - Fr: 05:30 - 18:30 Uhr</div>
+                <div>Sa: 06:00 - 16:00 Uhr | So: 07:00 - 13:00 Uhr</div>
+              </div>
             </div>
-            <div className="space-y-2 text-xs text-amber-200/70">
-              <div className="font-bold text-amber-400 uppercase tracking-wider">{lang === 'de' ? 'Öffnungszeiten' : 'Heures d\'ouverture'}</div>
-              <div>Mo - Fr: 05:30 - 18:30 Uhr</div>
-              <div>Sa: 06:00 - 16:00 Uhr</div>
-              <div>So: 07:00 - 13:00 Uhr</div>
+
+            <div className="lg:col-span-6 backdrop-blur-xl bg-black/40 border border-white/10 p-6 sm:p-8 rounded-2xl space-y-4">
+              {formSubmitted ? (
+                <div className="text-center py-12 space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-amber-400 text-black flex items-center justify-center mx-auto font-bold text-2xl">✓</div>
+                  <h4 className="text-xl font-serif font-bold text-white">{lang === 'de' ? 'Vielen Dank!' : 'Merci beaucoup!'}</h4>
+                  <p className="text-xs text-amber-200/70">{lang === 'de' ? 'Wir haben Ihre Anfrage erhalten und melden uns umgehend.' : 'Nous vous recontactons dans les plus brefs délais.'}</p>
+                </div>
+              ) : (
+                <form onSubmit={handleFormSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs text-amber-200/80 mb-1">{lang === 'de' ? 'Name' : 'Nom'}</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="z.B. Marc Favre" 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-amber-200/80 mb-1">{lang === 'de' ? 'Telefon' : 'Téléphone'}</label>
+                    <input 
+                      type="tel" 
+                      required
+                      value={formData.phone}
+                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+41 79 000 00 00" 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-amber-200/80 mb-1">{lang === 'de' ? 'Wünsche / Datum' : 'Demande / Date'}</label>
+                    <textarea 
+                      rows={2}
+                      value={formData.note}
+                      onChange={e => setFormData({ ...formData, note: e.target.value })}
+                      placeholder={lang === 'de' ? 'z.B. 10 Buttergipfeli für 07:30 Uhr' : 'ex: 10 croissants pour 07h30'} 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400 transition"
+                    />
+                  </div>
+                  <button type="submit" className="w-full py-3 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-amber-400/20">
+                    {lang === 'de' ? 'Jetzt Anfragen' : 'Envoyer la demande'}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </section>
@@ -283,36 +370,51 @@ export default function DynamicTenantView({
           </div>
         </header>
 
-        {/* Hero: Editorial Luxury Typography */}
-        <section className="py-24 px-6 max-w-5xl mx-auto text-center space-y-8">
-          <div className="inline-block px-4 py-1 rounded-full border border-rose-400/30 text-rose-300 text-[11px] tracking-[0.25em] uppercase font-mono">
-            ✦ Exclusive Salon Experience ✦
-          </div>
-          <h2 className="text-5xl sm:text-7xl font-serif font-extralight text-zinc-100 tracking-tight leading-[1.05]">
-            {lang === 'de' ? 'Schönheit & Perfektes Styling' : 'Élégance & Coiffure Sur-Mesure'}
-          </h2>
-          <p className="text-base sm:text-lg text-zinc-400 font-light max-w-xl mx-auto leading-relaxed">
-            {lang === 'de' ? `Ihr exklusiver Salon in ${city}. Wir kreieren individuelle Haarschnitte, Balayage-Farbtöne und intensive Haartherapien.` : `Votre salon haut de gamme à ${city}. Balayages raffinés et soins capillaires d'exception.`}
-          </p>
-        </section>
-
-        {/* Bento High Fashion Hero Box */}
-        <div className="max-w-6xl mx-auto px-6 pb-16">
-          <div className="relative rounded-3xl overflow-hidden border border-white/10 ring-1 ring-white/5 h-[480px] group">
-            <img src={imgSet.hero} alt="Salon" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
-            <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-rose-300">Google Client Rating</span>
-                <p className="text-3xl font-serif font-bold text-white mt-1">{rating} ★ ({reviewCount} {lang === 'de' ? 'Bewertungen' : 'avis'})</p>
+        {/* Hero Section: Asymmetrical Bento Grid */}
+        <section className="py-16 px-6 max-w-7xl mx-auto space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Bento 2x2 Main Headline */}
+            <div className="lg:col-span-7 backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl space-y-8 flex flex-col justify-between">
+              <div className="space-y-6">
+                <div className="inline-block px-3 py-1 rounded-full border border-rose-400/30 text-rose-300 text-[10px] tracking-[0.2em] uppercase font-mono">
+                  ✦ Haute Coiffure Experience ✦
+                </div>
+                <h1 className="text-4xl sm:text-6xl font-serif font-extralight text-zinc-100 tracking-tight leading-[1.05]">
+                  {lang === 'de' ? 'Schönheit & Perfektes Hair-Styling' : 'Élégance & Coiffure Sur-Mesure'}
+                </h1>
+                <p className="text-base sm:text-lg text-zinc-400 font-light max-w-xl leading-relaxed">
+                  {lang === 'de' ? `Ihr exklusiver Salon in ${city}. Wir kreieren individuelle Haarschnitte, Balayage-Farbtöne und intensive Haartherapien.` : `Votre salon haut de gamme à ${city}. Balayages raffinés et soins capillaires d'exception.`}
+                </p>
               </div>
-              <span className="text-xs text-zinc-400 font-mono">{address}</span>
+
+              <div className="pt-6 border-t border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-400/20 text-rose-300 flex items-center justify-center font-bold text-sm">
+                    {rating}★
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-rose-100">{rating} / 5.0 Rating</div>
+                    <div className="text-xs text-zinc-400">{reviewCount} {lang === 'de' ? 'Kundenbewertungen' : 'avis clients'}</div>
+                  </div>
+                </div>
+                <span className="text-xs text-zinc-400 font-mono">{address}</span>
+              </div>
+            </div>
+
+            {/* Bento Image Hero */}
+            <div className="lg:col-span-5 relative rounded-3xl overflow-hidden border border-white/10 ring-1 ring-white/5 min-h-[380px] group">
+              <img src={imgSet.hero} alt="Salon" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6 p-4 rounded-2xl backdrop-blur-xl bg-black/80 border border-white/10">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-rose-300">Haute Styling</span>
+                <p className="text-sm font-serif font-bold text-white mt-0.5">{name} · {city}</p>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Glass Price Cards */}
-        <section className="py-16 max-w-6xl mx-auto px-6 space-y-8">
+        {/* Glass Price Bento Grid */}
+        <section className="py-16 max-w-7xl mx-auto px-6 space-y-8">
           <h3 className="text-3xl font-serif text-center text-rose-100 tracking-wider uppercase font-light">{lang === 'de' ? 'Services & Price List' : 'Tarifs & Prestations'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="backdrop-blur-xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 rounded-3xl space-y-4">
@@ -380,7 +482,7 @@ export default function DynamicTenantView({
         </header>
 
         {/* Hero Bento */}
-        <section className="py-16 px-6 max-w-7xl mx-auto">
+        <section className="py-16 px-6 max-w-7xl mx-auto space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             <div className="lg:col-span-7 backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-300 text-xs font-semibold">
@@ -471,7 +573,7 @@ export default function DynamicTenantView({
         </header>
 
         {/* Hero Bento */}
-        <section className="py-16 px-6 max-w-7xl mx-auto">
+        <section className="py-16 px-6 max-w-7xl mx-auto space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             <div className="lg:col-span-7 backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl space-y-6">
               <div className="inline-block px-3 py-1 bg-orange-500/20 border border-orange-500/40 text-orange-400 font-bold text-xs rounded-lg uppercase">
