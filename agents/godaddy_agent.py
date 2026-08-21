@@ -1,7 +1,6 @@
 """
-GoDaddy Agent — DNS 记录自动化管理
-负责自动添加与移除 CNAME 记录，实现子域名 (xxx.sites.tubban.com) 自动绑定与下线
-支持 GODADDY_TOKEN (Personal Access Token) 或 GODADDY_API_KEY/SECRET 验证
+GoDaddy Agent — DNS 记录与所有权验证 API 管理
+支持 CNAME 显式解析与从数据库消费动态 TXT 验证凭证 (vc-domain-verify=...) 写入
 """
 import requests
 from config import GODADDY_TOKEN, GODADDY_API_KEY, GODADDY_API_SECRET, ROOT_DOMAIN
@@ -33,19 +32,17 @@ class GoDaddyAgent:
 
     def _clean_record_name(self, full_subdomain: str) -> str:
         """
-        将 backerei-pierre-biel.sites.tubban.com 转换为 GoDaddy 要求的 CNAME 名称:
-        即 backerei-pierre-biel.sites
+        将 backerei-pierre-biel.sites.tubban.com 转换为 GoDaddy CNAME 名称: backerei-pierre-biel.sites
+        将 _vercel.tubban.com 转换为 GoDaddy TXT 名称: _vercel
         """
         clean = full_subdomain.replace("https://", "").replace("http://", "").split("/")[0]
         if clean.endswith(f".{self.domain}"):
             clean = clean[:-len(f".{self.domain}")].rstrip(".")
-        return clean
+        return clean or "@"
 
     def set_cname(self, subdomain: str, target: str = "cname.vercel-dns.com") -> bool:
         """
-        添加/更新一条显式 CNAME 记录
-        例如: set_cname("backerei-pierre-biel.sites.tubban.com", "cname.vercel-dns.com")
-        在 GoDaddy 侧生成: backerei-pierre-biel.sites.tubban.com ➔ cname.vercel-dns.com
+        添加/更新 CNAME 解析记录
         """
         record_name = self._clean_record_name(subdomain)
         url = f"{GODADDY_API_BASE}/domains/{self.domain}/records/CNAME/{record_name}"
@@ -53,45 +50,48 @@ class GoDaddyAgent:
             "data": target,
             "ttl": 600,
         }]
-        print(f"   🌐 [GoDaddy API] 显式创建 CNAME 解析: {record_name}.{self.domain} ➔ {target}")
+        print(f"   🌐 [GoDaddy API] 写入 CNAME 解析: {record_name}.{self.domain} ➔ {target}")
         
         if not self.headers.get("Authorization"):
-            print("   ℹ️ 尚未配置 GODADDY_API_KEY 与 SECRET，已预生成完整 CNAME 指令")
+            print("   ℹ️ 尚未配置 GODADDY_API_KEY 与 SECRET，打印预期写入数据")
             return True
 
         try:
             r = requests.put(url, headers=self.headers, json=data, timeout=15)
             if r.status_code in (200, 204):
-                print(f"   ✅ [GoDaddy API] CNAME 记录成功写入: {record_name}.{self.domain}")
+                print(f"   ✅ [GoDaddy API] CNAME 记录写入成功: {record_name}.{self.domain}")
                 return True
             else:
                 print(f"   ⚠️ [GoDaddy API] 响应 HTTP [{r.status_code}]: {r.text}")
-                print(f"      👉 请确保在 https://developer.godaddy.com 创建了 API Key & Secret 并写入 .env 中的 GODADDY_API_KEY / GODADDY_API_SECRET")
                 return False
         except Exception as e:
             print(f"   ❌ [GoDaddy API] 请求网络异常: {e}")
             return False
 
-    def delete_cname(self, subdomain: str) -> bool:
+    def set_txt(self, record_domain: str, txt_value: str) -> bool:
         """
-        到期下线：移除特定 CNAME 记录
+        从数据库消费从 Vercel 获取的独有 TXT 验证凭证 (vc-domain-verify=...) 写入 GoDaddy
         """
-        record_name = self._clean_record_name(subdomain)
-        url = f"{GODADDY_API_BASE}/domains/{self.domain}/records/CNAME/{record_name}"
-        print(f"   🌐 [GoDaddy API] 删除 CNAME 记录: {record_name}.{self.domain}")
-
+        record_name = self._clean_record_name(record_domain)
+        url = f"{GODADDY_API_BASE}/domains/{self.domain}/records/TXT/{record_name}"
+        data = [{
+            "data": txt_value,
+            "ttl": 600,
+        }]
+        print(f"   🔐 [GoDaddy API] 写入 TXT 验证记录: {record_name}.{self.domain} ➔ Value: {txt_value[:40]}...")
+        
         if not self.headers.get("Authorization"):
-            print("   ℹ️ 未完整配置 GODADDY_TOKEN，跳过真实 DNS 删除")
+            print("   ℹ️ 尚未配置 GODADDY_API_KEY 与 SECRET，打印预期 TXT 验证数据")
             return True
 
         try:
-            r = requests.delete(url, headers=self.headers, timeout=15)
+            r = requests.put(url, headers=self.headers, json=data, timeout=15)
             if r.status_code in (200, 204):
-                print(f"   ✅ [GoDaddy API] CNAME 记录已成功删除: {record_name}.{self.domain}")
+                print(f"   ✅ [GoDaddy API] TXT 验证记录写入成功: {record_name}.{self.domain}")
                 return True
             else:
-                print(f"   ⚠️ [GoDaddy API] 删除响应 [{r.status_code}]: {r.text}")
+                print(f"   ⚠️ [GoDaddy API] TXT 写入响应 HTTP [{r.status_code}]: {r.text}")
                 return False
         except Exception as e:
-            print(f"   ❌ [GoDaddy API] 删除请求异常: {e}")
+            print(f"   ❌ [GoDaddy API] TXT 写入异常: {e}")
             return False

@@ -1,6 +1,6 @@
 """
-Vercel Agent — 域名自动化管理模块
-使用 Vercel REST API 自动向 Vercel 多租户项目添加与移除域名 (Custom Domains)
+Vercel Agent — 域名自动化管理与所有权校验模块
+使用 Vercel REST API 自动向 Vercel 多租户项目添加域名，提取验证所需的 TXT/CNAME 动态 Value，并触发自动校验
 """
 import requests
 import os
@@ -20,58 +20,74 @@ class VercelAgent:
             "Content-Type": "application/json",
         }
 
-    def add_domain(self, domain_name: str) -> bool:
+    def add_or_get_domain(self, domain_name: str) -> dict:
         """
-        向 Vercel 项目中自动添加并绑定一个自定义/子域名
-        例如: add_domain("backerei-pierre-biel.sites.tubban.com")
+        向 Vercel 项目添加域名，并提取 Vercel 返回的独有所有权验证凭证 (TXT Value)
+        返回包含 verified 状态与 verification 信息的字典
         """
         if not self.token:
-            print(f"   ℹ️ [Vercel API] 未配置 VERCEL_TOKEN，已记录模拟挂载域名: {domain_name}")
-            return True
+            print(f"   ℹ️ [Vercel API] 未配置 VERCEL_TOKEN，返回模拟数据")
+            return {"verified": True, "verification": []}
 
         url = f"{VERCEL_API_BASE}/v9/projects/{self.project_id}/domains"
         if self.team_id:
             url += f"?teamId={self.team_id}"
 
         payload = {"name": domain_name}
-        print(f"   🚀 [Vercel API] 挂载自定义域名 ➔ {domain_name} (Project: {self.project_id})")
+        print(f"   🚀 [Vercel API] 挂载 / 查询自定义域名 ➔ {domain_name} (Project: {self.project_id})")
 
         try:
             r = requests.post(url, headers=self.headers, json=payload, timeout=15)
-            if r.status_code in (200, 201):
-                print(f"   ✅ [Vercel API] 域名绑定成功: {domain_name}")
-                return True
-            elif r.status_code == 409:
-                print(f"   ℹ️ [Vercel API] 域名已存在并绑定: {domain_name}")
-                return True
-            else:
-                print(f"   ⚠️ [Vercel API] 域名挂载响应 [{r.status_code}]: {r.text}")
-                return False
+            data = r.json()
+
+            # 如果已经存在 (409 Conflict)，再次 GET 获取域名详情
+            if r.status_code == 409 or "error" in data:
+                get_url = f"{VERCEL_API_BASE}/v9/projects/{self.project_id}/domains/{domain_name}"
+                if self.team_id:
+                    get_url += f"?teamId={self.team_id}"
+                r_get = requests.get(get_url, headers=self.headers, timeout=15)
+                data = r_get.json()
+
+            verified = data.get("verified", False)
+            verification = data.get("verification", [])
+
+            print(f"   📊 [Vercel API] 域名状态: verified={verified}")
+            if verification:
+                for item in verification:
+                    print(f"      📌 提取验证凭证 -> Type: {item.get('type')}, Target: {item.get('domain')}, Value: {item.get('value')}")
+
+            return {
+                "name": domain_name,
+                "verified": verified,
+                "verification": verification,
+                "raw": data
+            }
         except Exception as e:
             print(f"   ❌ [Vercel API] 请求异常: {e}")
-            return False
+            return {"verified": False, "verification": []}
 
-    def remove_domain(self, domain_name: str) -> bool:
+    def verify_domain(self, domain_name: str) -> bool:
         """
-        从 Vercel 项目中移除自定义域名 (到期下线)
+        DNS 在 GoDaddy 写入后，触发 Vercel 域名所有权校验
         """
         if not self.token:
-            print(f"   ℹ️ [Vercel API] 未配置 VERCEL_TOKEN，跳过真实域名移除: {domain_name}")
             return True
 
-        url = f"{VERCEL_API_BASE}/v9/projects/{self.project_id}/domains/{domain_name}"
+        url = f"{VERCEL_API_BASE}/v9/projects/{self.project_id}/domains/{domain_name}/verify"
         if self.team_id:
             url += f"?teamId={self.team_id}"
 
-        print(f"   🔌 [Vercel API] 移除自定义域名 ➔ {domain_name}")
+        print(f"   🔄 [Vercel API] 触发所有权自动校验 ➔ {domain_name}")
         try:
-            r = requests.delete(url, headers=self.headers, timeout=15)
-            if r.status_code in (200, 204):
-                print(f"   ✅ [Vercel API] 域名成功解绑: {domain_name}")
+            r = requests.post(url, headers=self.headers, timeout=15)
+            res = r.json()
+            verified = res.get("verified", False)
+            if verified:
+                print(f"   🎉 [Vercel API] 域名成功通过校验并激活上线: {domain_name}")
                 return True
             else:
-                print(f"   ⚠️ [Vercel API] 域名解绑响应 [{r.status_code}]: {r.text}")
+                print(f"   ℹ️ [Vercel API] 域名校验准备中 (等待 DNS 传播生效)...")
                 return False
         except Exception as e:
-            print(f"   ❌ [Vercel API] 删除请求异常: {e}")
+            print(f"   ❌ [Vercel API] 校验请求异常: {e}")
             return False

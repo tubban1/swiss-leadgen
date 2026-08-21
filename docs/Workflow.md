@@ -1,78 +1,57 @@
-# 🇨🇭 Swiss LeadGen — 逐个全自动域名挂载与解析固化流水线 (Explicit 1-by-1 Solidified Provisioning Pipeline)
+# 🇨🇭 Swiss LeadGen — 全闭环 DNS 验证凭证提取、数据库保存与全自动写入架构规范 (Closed-Loop Provisioning & Verification Standard)
 
-> 鉴于 Vercel 不采用通配符，系统采用 **“逐个独立挂载、逐个显式解析” (1-by-1 Explicit Provisioning)** 标准流程。每个新创建的商家网站均会独立触发 Vercel API 绑定与 GoDaddy API CNAME 记录创建。
+> **核心流转法则**：每一个域名在 Vercel 挂载时，均会产生一个独有的所有权验证 Value (`vc-domain-verify=...`)。系统自动将 Vercel API 返回的验证凭证数据**保存至 Neon PostgreSQL 数据库**，下一个流程**从数据库消费此凭证**并精确写入 GoDaddy，最后触发 Vercel 二次校验实现 100% 自动激活。
 
 ---
 
-## 🔄 全自动化固化执行图解
+## 🔄 4 步全闭环数据流转图解 (Data Flow Architecture)
 
 ```
-                   ┌─────────────────────────────────────────┐
-                   │  1. 商家抓取 / 新建 (discover_biel.py)  │
-                   └────────────────────┬────────────────────┘
-                                        │
-                                        ▼
-                   ┌─────────────────────────────────────────┐
-                   │  2. Neon PostgreSQL 数据库持久化        │
-                   │     (status = 'deployed', is_pub=1)     │
-                   └────────────────────┬────────────────────┘
-                                        │
-                                        ▼
-                   ┌─────────────────────────────────────────┐
-                   │  3. Vercel REST API 逐个独立挂载        │
-                   │     POST /v9/projects/{project}/domains │
-                   │     Project ID: multi_tenant_site       │
-                   └────────────────────┬────────────────────┘
-                                        │
-                                        ▼
-                   ┌─────────────────────────────────────────┐
-                   │  4. GoDaddy REST API 逐个显式解析绑定   │
-                   │     PUT /v1/domains/{domain}/records/   │
-                   │     CNAME/{subdomain_prefix}            │
-                   │     Target: cname.vercel-dns.com        │
-                   └────────────────────┬────────────────────┘
-                                        │
-                                        ▼
-                   ┌─────────────────────────────────────────┐
-                   │  5. 极速全线开通在线 (HTTPS / SSL Ready)│
-                   └─────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│ Step 1: Vercel REST API 域名挂载与动态凭证提取                             │
+│ 调 POST /v9/projects/multi_tenant_site/domains                             │
+│ 提取独有 Verification 凭证:                                                │
+│ Type: TXT | Target: _vercel.tubban.com | Value: vc-domain-verify=...       │
+└─────────────────────────────────────┬─────────────────────────────────────┘
+                                      │
+                                      ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│ Step 2: Neon PostgreSQL 云数据库持久化保存                                │
+│ 将提取到的 verification_info (含精准 TXT Value) 序列化存入 leads 表       │
+└─────────────────────────────────────┬─────────────────────────────────────┘
+                                      │
+                                      ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│ Step 3: 从数据库消费凭证并全自动写入 GoDaddy                               │
+│ 1. 显式写入 CNAME 记录: {subdomain_prefix} ➔ cname.vercel-dns.com        │
+│ 2. 从数据库读取并写入专属 TXT 校验记录: _vercel ➔ {vc-domain-verify=...}    │
+└─────────────────────────────────────┬─────────────────────────────────────┘
+                                      │
+                                      ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│ Step 4: Vercel 所有权二次校验与开通                                        │
+│ 调 POST /v9/projects/multi_tenant_site/domains/{domain}/verify           │
+│ 状态由 "Verification Required" 自动转为 "Valid Configuration" (上线成功)   │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ 代码模块分工
+## 📋 各域名独有 TXT Value 在 Neon 数据库中的映射清单
 
-| 顺序 | 模块名称 | 核心职责 | 关联 API / 节点 |
-| :--- | :--- | :--- | :--- |
-| **Step 1** | `crm.py` | Lead 数据存入 Neon PostgreSQL 云数据库 | `insert_lead()` / `update_lead()` |
-| **Step 2** | `agents/vercel_agent.py` | 逐个调用 Vercel REST API 向 `multi_tenant_site` 项目挂载独立子域名 | `POST /v9/projects/multi_tenant_site/domains` |
-| **Step 3** | `agents/godaddy_agent.py` | 逐个调用 GoDaddy API 在 `tubban.com` 根下写入对应的 CNAME 记录 | `PUT /v1/domains/tubban.com/records/CNAME/{prefix}` |
-| **Step 4** | `agents/deploy_agent.py` | 统一调度器，实现单键并发与防重全自动部署 | `DeployAgent().run(lead)` |
-
----
-
-## 🔑 凭证配置 (`.env`)
-
-```env
-# Vercel REST API
-VERCEL_TOKEN=vcp_...
-VERCEL_PROJECT_ID=multi_tenant_site
-
-# GoDaddy REST API
-GODADDY_TOKEN=gd_pat_...
-GODADDY_API_KEY=your_key
-GODADDY_API_SECRET=your_secret
-ROOT_DOMAIN=sites.tubban.com
-```
+| 商家名称 | 域名 (Domain) | 数据库保存的真实 TXT Value (Vercel Verification) |
+| :--- | :--- | :--- |
+| **Sanitär Express Seeland** | `sanitaer-express-seeland.sites.tubban.com` | `vc-domain-verify=sanitaer-express-seeland.sites.tubban.com,b51a1f4ab5b27431d916` |
+| **Cabinet Dentaire Place** | `dentiste-place-centrale.sites.tubban.com` | `vc-domain-verify=dentiste-place-centrale.sites.tubban.com,fc985734d6b65419bf1a` |
+| **Boulangerie du Port Bienne**| `boulangerie-du-port-bienne.sites.tubban.com` | `vc-domain-verify=boulangerie-du-port-bienne.sites.tubban.com,eafe26ea27286d15a731` |
+| **Brasserie della Gare** | `brasserie-gare-bienne.sites.tubban.com` | `vc-domain-verify=brasserie-gare-bienne.sites.tubban.com,d30931d9fa47d5f9bec8` |
+| **Bäckerei Müller** | `backerei-muller.tubban.com` | `vc-domain-verify=backerei-muller.tubban.com,1ff08e1a1b0eb11459fe` |
 
 ---
 
-## 🚀 批量自动化运行工具
+## 🚀 运维运行命令
 
 ```bash
-# 1. 批量对数据库中全部商家逐个执行 Vercel + GoDaddy 挂载解析
-python tools/auto_provision_all.py
-
-# 2. 新增指定城市商家并自动逐个挂载
-python tools/discover_biel.py
+# 全闭环触发凭证提取、数据库保存、GoDaddy 精准写入与 Vercel 所有权校验
+python tools/auto_provision_closed_loop.py
 ```
