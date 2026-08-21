@@ -4,15 +4,14 @@ Vercel Agent — 域名自动化管理模块
 """
 import requests
 import os
-from config import VERCEL_TOKEN, VERCEL_TEAM_ID
+from config import VERCEL_TOKEN, VERCEL_TEAM_ID, VERCEL_PROJECT_ID
 
 VERCEL_API_BASE = "https://api.vercel.com"
-VERCEL_PROJECT = os.getenv("VERCEL_PROJECT_ID", "tubban-multi-tenant-site")
 
 
 class VercelAgent:
-    def __init__(self, project_id: str = VERCEL_PROJECT):
-        self.project_id = project_id
+    def __init__(self, project_id: str = None):
+        self.project_id = project_id or VERCEL_PROJECT_ID or "multi_tenant_site"
         self.token = VERCEL_TOKEN
         self.team_id = VERCEL_TEAM_ID
 

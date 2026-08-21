@@ -21,14 +21,14 @@ GITHUB_TOKEN   = os.getenv("GITHUB_TOKEN", "")
 GITHUB_ORG     = os.getenv("GITHUB_ORG", "")
 
 # ─── Vercel ───────────────────────────────────────────────
-VERCEL_TOKEN   = os.getenv("VERCEL_TOKEN", "")
-VERCEL_TEAM_ID = os.getenv("VERCEL_TEAM_ID", "")
+VERCEL_TOKEN      = os.getenv("VERCEL_TOKEN", "")
+VERCEL_PROJECT_ID = os.getenv("VERCEL_PROJECT_ID", "multi_tenant_site")
+VERCEL_TEAM_ID    = os.getenv("VERCEL_TEAM_ID", "")
 
 # ─── GoDaddy & Domain ─────────────────────────────────────
 GODADDY_TOKEN      = os.getenv("GODADDY_TOKEN", "")
 GODADDY_API_KEY    = os.getenv("GODADDY_API_KEY", "")
 GODADDY_API_SECRET = os.getenv("GODADDY_API_SECRET", "")
-# 如果主站已占用 tubban.com，默认使用 sites.tubban.com (如 backerei-muller.sites.tubban.com)
 ROOT_DOMAIN        = os.getenv("ROOT_DOMAIN", "sites.tubban.com")
 
 # ─── 数据库 (PostgreSQL Neon / SQLite) ───────────────────
