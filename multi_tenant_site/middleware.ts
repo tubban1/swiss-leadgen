@@ -5,12 +5,11 @@ export function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const hostname = req.headers.get('host') || req.nextUrl.hostname || '';
 
-  console.log(`[Middleware Check] Hostname: ${hostname} | Path: ${url.pathname}`);
-
-  // 1. 静态资源、内部 API 路由放行
+  // 1. 静态资源、内部 API 路由以及已经重写过的 /site 路径直接放行（关键防死循环）
   if (
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api') ||
+    url.pathname.startsWith('/site') ||
     url.pathname === '/favicon.ico'
   ) {
     return NextResponse.next();
