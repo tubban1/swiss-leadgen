@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Lock, Key, CheckCircle, Save, Eye, ArrowLeft, RefreshCw, Sparkles, Sliders, Code2, ShieldAlert } from 'lucide-react';
+import { Lock, Key, CheckCircle, Save, Eye, ArrowLeft, RefreshCw, Sparkles, Sliders, Code2 } from 'lucide-react';
 
 function MerchantAdminContent() {
   const searchParams = useSearchParams();
@@ -28,15 +28,18 @@ function MerchantAdminContent() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
 
-  useEffect(() => {
+  const getEffectiveDomain = () => {
+    if (domain) return domain;
+    if (queryDomain) return queryDomain;
     if (typeof window !== 'undefined') {
-      let hostDomain = queryDomain;
-      if (!hostDomain) {
-        const rawHost = window.location.hostname;
-        hostDomain = rawHost.replace('.sites.tubban.com', '').replace('.tubban.com', '');
-      }
-      setDomain(hostDomain);
+      const rawHost = window.location.hostname;
+      return rawHost.replace('.sites.tubban.com', '').replace('.tubban.com', '');
     }
+    return '';
+  };
+
+  useEffect(() => {
+    setDomain(getEffectiveDomain());
   }, [queryDomain]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -44,11 +47,13 @@ function MerchantAdminContent() {
     setLoading(true);
     setErrorMsg('');
 
+    const targetDomain = getEffectiveDomain();
+
     try {
       const res = await fetch('/api/site/admin/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain, pass: password })
+        body: JSON.stringify({ domain: targetDomain, pass: password })
       });
       const data = await res.json();
 
@@ -80,6 +85,8 @@ function MerchantAdminContent() {
     setSuccessMsg('');
     setErrorMsg('');
 
+    const targetDomain = getEffectiveDomain();
+
     try {
       let payloadConfig = siteConfig;
 
@@ -110,7 +117,7 @@ function MerchantAdminContent() {
       const res = await fetch('/api/site/admin/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain, pass: password, siteConfig: payloadConfig })
+        body: JSON.stringify({ domain: targetDomain, pass: password, siteConfig: payloadConfig })
       });
 
       const data = await res.json();
@@ -128,6 +135,8 @@ function MerchantAdminContent() {
     }
   };
 
+  const effectiveDomain = getEffectiveDomain();
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#07090e] text-white flex items-center justify-center p-6 selection:bg-amber-400 selection:text-black">
@@ -139,7 +148,7 @@ function MerchantAdminContent() {
               <Lock className="w-6 h-6" />
             </div>
             <h1 className="text-2xl font-serif font-bold text-white">Merchant Admin Portal</h1>
-            <p className="text-xs text-zinc-400 font-mono">{domain || 'Merchant Authentication'}</p>
+            <p className="text-xs text-amber-400 font-mono tracking-wide">{effectiveDomain || 'Authentifizierung'}</p>
           </div>
 
           {errorMsg && (
@@ -194,7 +203,7 @@ function MerchantAdminContent() {
             </div>
             <div>
               <h1 className="font-serif text-xl font-bold text-white">{tenantName}</h1>
-              <p className="text-xs text-amber-400 font-mono">{subdomain || domain}</p>
+              <p className="text-xs text-amber-400 font-mono">{subdomain || effectiveDomain}</p>
             </div>
           </div>
 
@@ -277,7 +286,7 @@ function MerchantAdminContent() {
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1 font-mono">Hero Title (DE)</label>
+                    <label className="block text-xs text-zinc-400 mb-1 font-mono font-bold">Hero Title (DE)</label>
                     <input
                       type="text"
                       value={heroTitleDe}
@@ -286,7 +295,7 @@ function MerchantAdminContent() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1 font-mono">Hero Title (FR)</label>
+                    <label className="block text-xs text-zinc-400 mb-1 font-mono font-bold">Hero Title (FR)</label>
                     <input
                       type="text"
                       value={heroTitleFr}
@@ -295,7 +304,7 @@ function MerchantAdminContent() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-1 font-mono">Hero Subtitle (DE)</label>
+                    <label className="block text-xs text-zinc-400 mb-1 font-mono font-bold">Hero Subtitle (DE)</label>
                     <textarea
                       rows={2}
                       value={heroSubtitleDe}
@@ -338,8 +347,8 @@ function MerchantAdminContent() {
                 <h4 className="text-xs font-mono uppercase text-zinc-400 font-bold">Admin Status</h4>
                 <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-400/30 space-y-2">
                   <div className="text-xs text-amber-300 font-mono">Current Domain:</div>
-                  <div className="text-sm font-mono font-bold text-amber-400">{subdomain || domain}</div>
-                  <div className="text-[10px] text-zinc-400">Authenticated via Neon PostgreSQL random password.</div>
+                  <div className="text-sm font-mono font-bold text-amber-400">{subdomain || effectiveDomain}</div>
+                  <div className="text-[10px] text-zinc-400 font-mono">Authenticated via Neon PostgreSQL random password.</div>
                 </div>
               </div>
             </div>
