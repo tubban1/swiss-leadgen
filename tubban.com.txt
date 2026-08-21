@@ -1,0 +1,87 @@
+; Domain: tubban.com
+; Exported (y-m-d hh:mm:ss): 2026-08-21 13:04:59
+;
+; This file is intended for use for informational and archival
+; purposes ONLY and MUST be edited before use on a production
+; DNS server.
+;
+; In particular, you must update the SOA record with the correct
+; authoritative name server and contact e-mail address information,
+; and add the correct NS records for the name servers which will
+; be authoritative for this domain.
+;
+; For further information, please consult the BIND documentation
+; located on the following website:
+;
+; http://www.isc.org/
+;
+; And RFC 1035:
+;
+; http://www.ietf.org/rfc/rfc1035.txt
+;
+; Please note that we do NOT offer technical support for any use
+; of this zone data, the BIND name server, or any other third-
+; party DNS software.
+;
+; Use at your own risk.
+
+
+$ORIGIN tubban.com.
+
+; SOA Record
+@	3600	 IN 	SOA	ns29.domaincontrol.com.	dns.jomax.net. (
+					2026082108
+					28800
+					7200
+					604800
+					3600
+					) 
+
+; A Record
+@	3600	 IN 	A	76.76.21.21
+ai	600	 IN 	A	15.197.142.173
+ai	600	 IN 	A	3.33.152.147
+b	3600	 IN 	A	47.90.54.248
+bapi	3600	 IN 	A	47.90.54.248
+cms	3600	 IN 	A	47.90.38.103
+m	3600	 IN 	A	47.90.54.248
+mds	3600	 IN 	A	47.90.72.250
+op	3600	 IN 	A	47.90.72.250
+res	3600	 IN 	A	47.90.72.250
+static	3600	 IN 	A	47.90.72.250
+u	3600	 IN 	A	47.90.54.248
+uapi	3600	 IN 	A	47.90.54.248
+
+; TXT Record
+@	3600	 IN 	TXT	"v=spf1 include:spf.exmail.qq.com ~all"
+hedt2511._domainkey	3600	 IN 	TXT	"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC2niVuHZev/cfKv3e2NeI3A+Quj5xi2uIEU5dBekfeOlf9aFJX1k46u0K26iqPrUeqyZt3FXkyp6ClgAkrYAtz65VrLTZ8ASXJTE9y6PN6j+x9cfm9Q8G/4jqClzlUmPkvFMJFPcfl+PRKbn2GRufX1k+ah02UVhUTQh34R8N/9QIDAQAB"
+_dmarc	3600	 IN 	TXT	"v=DMARC1; p=quarantine; rua=mailto:info@tubban.com"
+_vercel	3600	 IN 	TXT	"vc-domain-verify=*.sites.tubban.com,1aaab422878bd0f73aec"
+_vercel	3600	 IN 	TXT	"vc-domain-verify=tubban.com,c322db9d5123eebfc13f"
+_vercel	3600	 IN 	TXT	"vc-domain-verify=www.tubban.com,76956ec181b7acd81939"
+
+; CNAME Record
+*.sites	3600	 IN 	CNAME	sites.tubban.com.
+44e061a4-2494-4f5a-90b8-d9e6165d2ed2	3600	 IN 	CNAME	dns-verification.shopify.com.
+calendar	3600	 IN 	CNAME	calendar.secureserver.net.
+email	3600	 IN 	CNAME	email.secureserver.net.
+fax	3600	 IN 	CNAME	fax.secureserver.net.
+files	3600	 IN 	CNAME	files.secureserver.net.
+ftp	3600	 IN 	CNAME	@
+imap	3600	 IN 	CNAME	imap.secureserver.net.
+mail	3600	 IN 	CNAME	pop.secureserver.net.
+mobilemail	3600	 IN 	CNAME	mobilemail-v01.prod.mesa1.secureserver.net.
+pop	3600	 IN 	CNAME	pop.secureserver.net.
+sites	3600	 IN 	CNAME	4486e1c3ac91a3bb.vercel-dns-017.com.
+smtp	3600	 IN 	CNAME	smtp.secureserver.net.
+www	3600	 IN 	CNAME	cname.vercel-dns.com.
+_domainconnect	3600	 IN 	CNAME	_domainconnect.gd.domaincontrol.com.
+
+; NS Record
+@	3600	 IN 	NS	ns29.domaincontrol.com.
+@	3600	 IN 	NS	ns30.domaincontrol.com.
+
+; MX Record
+@	3600	 IN 	MX	10	mxbiz2.qq.com.
+@	3600	 IN 	MX	5	mxbiz1.qq.com.
+
