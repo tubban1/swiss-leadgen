@@ -1,138 +1,122 @@
 """
-Email Outreach Agent
-为不同语言区（DE/FR/IT）的商家生成定制销售邮件并用 Resend 发送
-包含服务条款（30天免费试用，首年800，次年起100/年）与 Admin 登录凭证
+Email Agent — 草稿模式与手工审核模式
+默认只在 CRM 数据库生成草稿日志 (email_log)，不真实外发邮件。
+管理员可在 Admin Dashboard 统一审核后发送或导出。
 """
-import resend
-from openai import OpenAI
-from config import (
-    OPENAI_API_KEY, OPENAI_MODEL, RESEND_API_KEY,
-    FROM_EMAIL, FROM_NAME, PRICE_FIRST_YEAR, PRICE_RENEWAL
-)
+import json
+from config import RESEND_API_KEY, FROM_EMAIL, FROM_NAME, PRICE_FIRST_YEAR, PRICE_RENEWAL, FREE_TRIAL_DAYS
 from crm import update_lead, log_email
-from datetime import datetime
-
-openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-if RESEND_API_KEY:
-    resend.api_key = RESEND_API_KEY
-
-
-EMAIL_PROMPT = """You are a polite, professional Swiss sales representative for Tubban Websites.
-Write a localized cold outreach email to a business owner.
-
-Language: {language_full} ({language})
-Business Name: {name}
-Category: {category}
-City: {city}
-Subdomain URL: {subdomain_url}
-Admin URL: {admin_url}
-Admin Password: {admin_pass}
-
-Offer details to communicate:
-- We noticed you have high ratings on Google Maps but no website.
-- We built a custom website for your business for free: {subdomain_url}
-- You can manage it at {admin_url} (Password: {admin_pass}).
-- It's free to try for 30 days. No hidden fees, no auto-renewal.
-- If you want to keep it: CHF {price_first_year} for year 1, then CHF {price_renewal}/year.
-- If you don't want it, simply ignore this email and it will deactivate automatically in 30 days.
-
-Return JSON format:
-{
-  "subject": "...subject line in {language_full}...",
-  "body_html": "...email HTML content in {language_full}..."
-}"""
 
 
 class EmailAgent:
 
-    def _generate_fallback_email(self, lead: dict, deploy_result: dict) -> tuple[str, str]:
-        """未配置 OPENAI_API_KEY 时的标准本地化邮件模版"""
+    def _generate_template(self, lead: dict, deploy_result: dict) -> tuple[str, str]:
+        """按语言生成商业高情商 outreach 模版 (德/法/意)"""
         lang = lead.get("language", "de")
         name = lead["name"]
-        url = deploy_result["subdomain_url"]
+        city = lead.get("city", "Schweiz")
+        site_url = deploy_result["subdomain_url"]
         admin_url = deploy_result["admin_url"]
-        admin_pass = lead.get("admin_pass", "")
+        admin_pass = lead.get("admin_pass", "N/A")
 
         if lang == "fr":
-            subject = f"Un nouveau site web professionnel gratuit pour {name}"
-            body = f"""
-            <p>Bonjour,</p>
-            <p>Nous avons remarqué votre excellente réputation sur Google Maps et nous avons créé un site web sur mesure pour <strong>{name}</strong> :</p>
-            <p>👉 <a href="{url}">{url}</a></p>
-            <p>Vous pouvez gérer votre contenu ici : <a href="{admin_url}">{admin_url}</a> (Mot de passe: <code>{admin_pass}</code>)</p>
-            <p>Essai gratuit de 30 jours. Tarif : CHF {PRICE_FIRST_YEAR} la 1ère année, puis CHF {PRICE_RENEWAL}/an.</p>
-            <p>Cordialement,<br>L'équipe Tubban</p>
+            subject = f"Un nouveau site web moderne créé pour {name} (Essai gratuit 30 jours)"
+            body_html = f"""
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1A365D;">Bonjour l'équipe de {name},</h2>
+                <p>Nous avons remarqué votre excellente réputation à {city} (Note Google ⭐ <strong>{lead.get('rating', '4.8')}</strong>) et l'absence d'un site web dédié.</p>
+                <p>Pour vous aider à attirer de nouveaux clients, notre IA a créé un site web sur-mesure pour vous :</p>
+
+                <div style="background: #f4f6f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3182ce;">
+                    <p style="margin: 0 0 10px 0;">🌐 <strong>Aperçu du site :</strong> <a href="{site_url}" style="color: #3182ce; font-weight: bold;">{site_url}</a></p>
+                    <p style="margin: 0 0 10px 0;">🔑 <strong>Espace d'administration :</strong> <a href="{admin_url}">{admin_url}</a></p>
+                    <p style="margin: 0;">🔒 <strong>Mot de passe admin :</strong> <code>{admin_pass}</code></p>
+                </div>
+
+                <p><strong>30 jours d'essai 100% gratuit</strong> sans aucun engagement.</p>
+                <p>Si le site vous plaît : <strong>CHF {PRICE_FIRST_YEAR}</strong> pour la 1ère année, puis <strong>CHF {PRICE_RENEWAL}/an</strong>.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+                <p style="font-size: 12px; color: #888;">Envoyé par {FROM_NAME}</p>
+            </div>
             """
-        else: # Default German
-            subject = f"Eine neue kostenlose Website für {name}"
-            body = f"""
-            <p>Grüezi,</p>
-            <p>wir haben Ihre hervorragenden Bewertungen auf Google Maps gesehen und eine professionelle Website für <strong>{name}</strong> erstellt:</p>
-            <p>👉 <a href="{url}">{url}</a></p>
-            <p>Verwaltung: <a href="{admin_url}">{admin_url}</a> (Passwort: <code>{admin_pass}</code>)</p>
-            <p>30 Tage kostenlos testen. Bei Gefallen CHF {PRICE_FIRST_YEAR} im 1. Jahr, danach CHF {PRICE_RENEWAL}/Jahr.</p>
-            <p>Freundliche Grüsse,<br>Ihr Tubban Team</p>
-            """
-        return subject, body
-
-    def send(self, lead: dict, deploy_result: dict) -> bool:
-        """生成并发送销售邮件"""
-        lang = lead.get("language", "de")
-        lang_full = {"de": "German", "fr": "French", "it": "Italian"}.get(lang, "German")
-
-        print(f"\n✉️  [Antigravity Agent] 生成销售邮件 ({lang_full})...")
-
-        if not openai_client:
-            subject, body_html = self._generate_fallback_email(lead, deploy_result)
         else:
-            prompt = EMAIL_PROMPT.format(
-                language_full=lang_full,
-                language=lang,
-                name=lead["name"],
-                category=lead.get("category", "business"),
-                city=lead.get("city", ""),
-                subdomain_url=deploy_result["subdomain_url"],
-                admin_url=deploy_result["admin_url"],
-                admin_pass=lead.get("admin_pass", ""),
-                price_first_year=PRICE_FIRST_YEAR,
-                price_renewal=PRICE_RENEWAL,
-            )
+            # 德语 (默认)
+            subject = f"Eine neue Website für {name} (30 Tage kostenlos testen)"
+            body_html = f"""
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1A365D;">Grüezi Team {name},</h2>
+                <p>wir haben Ihre hervorragenden Bewertungen in {city} (Google Note ⭐ <strong>{lead.get('rating', '4.8')}</strong>) bemerkt.</p>
+                <p>Um Ihre Online-Präsenz zu stärken, haben wir für Sie eine moderne Website erstellt:</p>
 
-            import json
-            response = openai_client.chat.completions.create(
-                model=OPENAI_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
-            )
-            data = json.loads(response.choices[0].message.content)
-            subject = data["subject"]
-            body_html = data["body_html"]
+                <div style="background: #f4f6f9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3182ce;">
+                    <p style="margin: 0 0 10px 0;">🌐 <strong>Ihre neue Website:</strong> <a href="{site_url}" style="color: #3182ce; font-weight: bold;">{site_url}</a></p>
+                    <p style="margin: 0 0 10px 0;">🔑 <strong>Admin-Zugang:</strong> <a href="{admin_url}">{admin_url}</a></p>
+                    <p style="margin: 0;">🔒 <strong>Passwort:</strong> <code>{admin_pass}</code></p>
+                </div>
 
-        recipient = lead.get("email")
-        if not recipient:
-            print(f"⚠️  {lead['name']}: 无有效电子邮箱，已在数据库记录生成好的邮件文本。")
-            log_email(lead["id"], "outreach", subject, body_html)
-            return False
+                <p>Sie können die Website <strong>30 Tage lang völlig kostenlos und unverbindlich testen</strong>.</p>
+                <p>Paketpreis: <strong>CHF {PRICE_FIRST_YEAR}</strong> im 1. Jahr, danach nur <strong>CHF {PRICE_RENEWAL}/Jahr</strong>.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+                <p style="font-size: 12px; color: #888;">Gesendet von {FROM_NAME}</p>
+            </div>
+            """
 
-        if not RESEND_API_KEY:
-            print(f"ℹ️ 未配置 RESEND_API_KEY，已模拟成功发送邮件给 {recipient}")
-            log_email(lead["id"], "outreach", subject, body_html)
-            update_lead(lead["id"], status="emailed", email_sent_at=datetime.utcnow().isoformat())
-            return True
+        return subject, body_html
 
-        try:
-            params = {
-                "from": f"{FROM_NAME} <{FROM_EMAIL}>",
-                "to": [recipient],
-                "subject": subject,
-                "html": body_html,
-            }
-            resend.Emails.send(params)
-            print(f"✅ 邮件已成功发送给 {recipient}")
-            log_email(lead["id"], "outreach", subject, body_html)
-            update_lead(lead["id"], status="emailed", email_sent_at=datetime.utcnow().isoformat())
-            return True
+    def send(self, lead: dict, deploy_result: dict, auto_send: bool = False) -> bool:
+        """
+        保存草稿至数据库。
+        auto_send: 默认 False（不自动外发，仅存数据库供 Admin 审核）
+        """
+        subject, body_html = self._generate_template(lead, deploy_result)
+        lead_id = lead["id"]
 
-        except Exception as e:
-            print(f"❌ 邮件发送失败: {e}")
-            return False
+        # 无论是否真实外发，先把邮件草稿和状态存储在数据库 CRM 中！
+        log_email(lead_id, "outreach_draft", subject, body_html)
+        update_lead(lead_id, status="ready_for_review")
+
+        print(f"   ✉️  [CRM 记录] 邮件草稿已生成并存入数据库 (未真实发送)")
+        print(f"      主题: {subject}")
+
+        if auto_send and RESEND_API_KEY:
+            import requests
+            try:
+                r = requests.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {RESEND_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "from": f"{FROM_NAME} <{FROM_EMAIL}>",
+                        "to": [lead["email"]],
+                        "subject": subject,
+                        "html": body_html,
+                    },
+                    timeout=10,
+                )
+                r.raise_for_status()
+                update_lead(lead_id, status="emailed")
+                print(f"   ✅ [Resend] 真实邮件已外发至 {lead['email']}")
+                return True
+            except Exception as e:
+                print(f"   ❌ 发送失败: {e}")
+                return False
+
+        return True
+
+    def send_followup(self, lead: dict, deploy_result: dict, auto_send: bool = False) -> bool:
+        """跟进邮件草稿"""
+        lang = lead.get("language", "de")
+        site_url = deploy_result["subdomain_url"]
+
+        if lang == "fr":
+            subject = f"Rappel : Votre site web {lead['name']} est toujours disponible"
+            body = f"<p>Bonjour, votre site est toujours accessible sur <a href='{site_url}'>{site_url}</a>.</p>"
+        else:
+            subject = f"Erinnerung: Ihre Website {lead['name']} ist aktiv"
+            body = f"<p>Grüezi, Ihre Website ist weiterhin erreichbar unter <a href='{site_url}'>{site_url}</a>.</p>"
+
+        log_email(lead["id"], "followup_draft", subject, body)
+        print(f"   ✉️  [CRM 记录] 跟进邮件草稿已存库")
+        return True
