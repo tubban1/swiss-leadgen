@@ -16,12 +16,16 @@ export async function POST(request: Request) {
     }
 
     const sql = neon(databaseUrl);
+    const cleanDomain = domain
+      .replace('.sites.tubban.com', '')
+      .replace('.tubban.com', '');
 
     // 校验身份
     const leads = await sql`
       SELECT l.id, l.admin_pass
       FROM leads l
-      WHERE l.subdomain = ${domain} OR l.subdomain = ${domain + '.tubban.com'} OR l.subdomain = ${domain + '.sites.tubban.com'}
+      WHERE l.subdomain ILIKE ${'%' + cleanDomain + '%'}
+         OR l.slug ILIKE ${'%' + cleanDomain + '%'}
       LIMIT 1;
     `;
 

@@ -16,13 +16,17 @@ export async function POST(request: Request) {
     }
 
     const sql = neon(databaseUrl);
+    const cleanDomain = domain
+      .replace('.sites.tubban.com', '')
+      .replace('.tubban.com', '');
 
     // 查询该子域名的真实 lead 记录
     const leads = await sql`
       SELECT l.id, l.name, l.subdomain, l.admin_pass, sc.config_json as site_config
       FROM leads l
       LEFT JOIN site_configs sc ON l.id = sc.lead_id
-      WHERE l.subdomain = ${domain} OR l.subdomain = ${domain + '.tubban.com'} OR l.subdomain = ${domain + '.sites.tubban.com'}
+      WHERE l.subdomain ILIKE ${'%' + cleanDomain + '%'}
+         OR l.slug ILIKE ${'%' + cleanDomain + '%'}
       LIMIT 1;
     `;
 
