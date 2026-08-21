@@ -1,6 +1,6 @@
 """
-GoDaddy Agent — 自动化向 GoDaddy DNS Zone 添加 CNAME 与合并 TXT 域名验证记录
-支持 API PAT Token (gd_pat_...) 鉴权与多 TXT 凭证全量合并写入
+GoDaddy Agent — 自动化向 GoDaddy DNS Zone 添加特化 CNAME (如 4486e1c3ac91a3bb.vercel-dns-017.com.) 
+与合并 TXT 域名验证记录
 """
 import os
 import requests
@@ -32,23 +32,24 @@ class GoDaddyAgent:
             headers_list.append({"Authorization": f"sso-key {self.token or 'dummy'}", "Content-Type": "application/json"})
         return headers_list
 
-    def set_cname(self, subdomain: str, target: str = "cname.vercel-dns.com") -> bool:
+    def set_cname(self, subdomain: str, target: str = "4486e1c3ac91a3bb.vercel-dns-017.com.") -> bool:
         """
-        写入或替换子域名的 CNAME 解析记录
+        写入或替换子域名的 CNAME 解析记录，支持 Vercel 推荐的专属特化 CNAME Target 
+        (如 4486e1c3ac91a3bb.vercel-dns-017.com.)
         """
         record_name = subdomain.replace(f".{self.domain}", "").strip()
-        payload = [{"data": target, "ttl": 600}]
-        return self._put_godaddy_record("CNAME", record_name, payload, f"{subdomain} ➔ {target}")
+        target_clean = target.rstrip('.')
+        payload = [{"data": target_clean, "ttl": 600}]
+        return self._put_godaddy_record("CNAME", record_name, payload, f"{subdomain} ➔ {target_clean}")
 
     def sync_all_txt_verifications(self, txt_records: list) -> bool:
         """
-        关键突破：将所有商家在 Neon 数据库中保存的 Verification TXT Value (如 vc-domain-verify=...) 
-        全量合并打包一次性提交给 GoDaddy 的 _vercel 记录，彻底避免后一个商家覆盖前一个商家的 TXT 验证！
+        将所有商家在 Neon 数据库中保存的 Verification TXT Value 
+        全量合并打包一次性提交给 GoDaddy 的 _vercel 记录
         """
         if not txt_records:
             return True
 
-        # 构建 GoDaddy 要求的 Records 批量数组
         payload = []
         seen_values = set()
         for item in txt_records:
