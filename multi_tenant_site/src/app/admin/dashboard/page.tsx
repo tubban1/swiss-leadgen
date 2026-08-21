@@ -275,24 +275,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
-font-medium text-slate-400">邮件正文预览 (HTML Draft):</label>
-              <div
-                className="p-4 bg-white text-slate-900 rounded-xl max-h-96 overflow-y-auto text-sm"
-                dangerouslySetInnerHTML={{ __html: selectedLead.email_body || '<p>暂无正文</p>' }}
-              />
-            </div>
 
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setSelectedLead(null)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
-              >
-                完成预览
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
