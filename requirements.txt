@@ -1,0 +1,8 @@
+python-dotenv
+openai
+requests
+jinja2
+resend
+apscheduler
+playwright
+psycopg2-binary
