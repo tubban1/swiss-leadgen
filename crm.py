@@ -1,6 +1,6 @@
 """
 CRM 数据库 — 自动适配 Neon PostgreSQL / SQLite
-管理所有 leads 的生命周期与多租户网站配置 (site_config)
+管理所有 leads 的生命周期、多租户网站配置 (site_config) 以及 DNS 验证数据 (dns_verification)
 """
 import sqlite3
 import json
@@ -37,7 +37,7 @@ db = DatabaseWrapper()
 
 
 def init_db():
-    """初始化数据库表 (自动兼容 Postgres & SQLite)"""
+    """初始化数据库表并执行 Schema Migration (添加 dns_verification 独立列)"""
     conn = db.get_connection()
     if db.is_postgres:
         with conn.cursor() as cur:
@@ -62,6 +62,7 @@ def init_db():
                     subdomain        VARCHAR(255) UNIQUE,
                     admin_pass       VARCHAR(100),
                     site_config      TEXT,
+                    dns_verification TEXT,
                     is_published     BOOLEAN DEFAULT TRUE,
                     
                     status           VARCHAR(50) DEFAULT 'discovered',
@@ -74,6 +75,9 @@ def init_db():
                     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
+                -- 自动 Migration 校验：添加 dns_verification 字段
+                ALTER TABLE leads ADD COLUMN IF NOT EXISTS dns_verification TEXT;
+
                 CREATE TABLE IF NOT EXISTS email_log (
                     id          VARCHAR(64) PRIMARY KEY,
                     lead_id     VARCHAR(64) REFERENCES leads(id),
@@ -85,7 +89,7 @@ def init_db():
                 );
             """)
             conn.commit()
-            print("✅ CRM 数据库初始化成功 [Neon PostgreSQL]")
+            print("✅ CRM 数据库初始化与 Schema Migration 成功 [Neon PostgreSQL: dns_verification 列就绪]")
     else:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS leads (
@@ -108,6 +112,7 @@ def init_db():
                 subdomain        TEXT UNIQUE,
                 admin_pass       TEXT,
                 site_config      TEXT,
+                dns_verification TEXT,
                 is_published     INTEGER DEFAULT 1,
                 
                 status           TEXT DEFAULT 'discovered',
@@ -139,13 +144,29 @@ def _row_to_dict(row, cursor=None):
     if row is None:
         return None
     if isinstance(row, dict):
-        return row
-    if hasattr(row, 'keys'): # SQLite Row
-        return dict(row)
-    if cursor and hasattr(cursor, 'description'):
+        d = row
+    elif hasattr(row, 'keys'): # SQLite Row
+        d = dict(row)
+    elif cursor and hasattr(cursor, 'description'):
         colnames = [desc[0] for desc in cursor.description]
-        return dict(zip(colnames, row))
-    return dict(row)
+        d = dict(zip(colnames, row))
+    else:
+        d = dict(row)
+
+    # 自动解析 JSON 字符串
+    if d.get("site_config") and isinstance(d["site_config"], str):
+        try:
+            d["site_config"] = json.loads(d["site_config"])
+        except Exception:
+            pass
+
+    if d.get("dns_verification") and isinstance(d["dns_verification"], str):
+        try:
+            d["dns_verification"] = json.loads(d["dns_verification"])
+        except Exception:
+            pass
+
+    return d
 
 
 def lead_exists(place_id: str) -> bool:
@@ -204,8 +225,12 @@ def insert_lead(data: dict) -> str:
 
 def update_lead(lead_id: str, **kwargs):
     kwargs["updated_at"] = datetime.utcnow().isoformat()
+
     if "site_config" in kwargs and isinstance(kwargs["site_config"], (dict, list)):
         kwargs["site_config"] = json.dumps(kwargs["site_config"], ensure_ascii=False)
+
+    if "dns_verification" in kwargs and isinstance(kwargs["dns_verification"], (dict, list)):
+        kwargs["dns_verification"] = json.dumps(kwargs["dns_verification"], ensure_ascii=False)
 
     if db.is_postgres and "is_published" in kwargs:
         kwargs["is_published"] = bool(kwargs["is_published"])
@@ -223,6 +248,20 @@ def update_lead(lead_id: str, **kwargs):
     conn.close()
 
 
+def get_lead_by_id(lead_id: str) -> dict | None:
+    conn = db.get_connection()
+    if db.is_postgres:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM leads WHERE id=%s", (lead_id,))
+            row = cur.fetchone()
+            result = _row_to_dict(row, cur)
+    else:
+        row = conn.execute("SELECT * FROM leads WHERE id=?", (lead_id,)).fetchone()
+        result = _row_to_dict(row)
+    conn.close()
+    return result
+
+
 def get_lead_by_subdomain(subdomain: str) -> dict | None:
     conn = db.get_connection()
     if db.is_postgres:
@@ -234,10 +273,6 @@ def get_lead_by_subdomain(subdomain: str) -> dict | None:
         row = conn.execute("SELECT * FROM leads WHERE subdomain=? AND is_published=1", (subdomain,)).fetchone()
         result = _row_to_dict(row)
     conn.close()
-
-    if result and result.get("site_config"):
-        if isinstance(result["site_config"], str):
-            result["site_config"] = json.loads(result["site_config"])
     return result
 
 
