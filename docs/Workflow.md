@@ -1,103 +1,67 @@
-# 🇨🇭 Swiss LeadGen — Multi-Agent 强中间态数据库存储与数据流转规范 (Explicit Multi-Agent Pipeline Storage Spec)
+# 🇨🇭 Swiss LeadGen — 领域驱动多表解耦数据库架构与 Multi-Agent 数据流转规范 (Enterprise Relational Multi-Table Architecture)
 
-> **核心设计思想**：每个 Agent 的产出与网络交互凭证，**都必须作为强中间态显式保存至 Neon PostgreSQL 数据库中**，供下一个 Agent 或部署节点直接消费与使用。
+> **领域设计原则**：拒绝混乱的单表大宽表。系统严格按照 **DDD (Domain-Driven Design)** 规范，拆分为 **4 大核心专业关系型数据表**，每个 Agent 只操作并更新自身领域的数据库表，并通过外键 (`lead_id`) 形成严密高效的数据流转。
 
 ---
 
-## 🗄️ 1. `leads` 数据库表结构与 Agent 产出中间态映射
+## 🏛️ 1. 4 大领域专业数据库表 (Enterprise Relational Tables)
 
+```
+┌───────────────────────────────────────────────────────────────────────────┐
+│ 1. leads (主表 - 核心领域)                                                 │
+│    id (PK), place_id, name, category, address, city, canton, language...  │
+└─────────────────────────────────────┬─────────────────────────────────────┘
+                                      │ 1:1 外键关联 (lead_id)
+      ┌───────────────────────────────┼───────────────────────────────┐
+      │                               │                               │
+      ▼                               ▼                               ▼
+┌──────────────────────────┐   ┌──────────────────────────┐   ┌──────────────────────────┐
+│ 2. lead_enrichments      │   │ 3. site_configs          │   │ 4. deployments           │
+│ (富化数据表)              │   │ (建站与排版配置表)       │   │ (网络部署与 DNS 凭证表)  │
+│ ├─ email, phone          │   │ ├─ slug, subdomain       │   │ ├─ vercel_status         │
+│ ├─ reviews_data (Google) │   │ ├─ admin_pass            │   │ ├─ dns_verification (TXT)│
+│ └─ services_data         │   │ └─ site_config (JSON)    │   │ └─ godaddy_status        │
+└──────────────────────────┘   └──────────────────────────┘   └──────────────────────────┘
+```
+
+---
+
+## 🔄 2. 5 阶段 Multi-Agent 解耦分流读写链条
+
+| 阶段 Agent | 读取依赖 (Inputs) | 写入目标表 (Target DB Table) | 写入/更新字段 |
+| :--- | :--- | :--- | :--- |
+| **Agent 1: Discovery** | Google Maps API | `leads` | `place_id`, `name`, `address`, `city` |
+| **Agent 2: Enrichment** | Google Places / Outscraper | `lead_enrichments` | `email`, `phone`, `reviews_data` |
+| **Agent 3: SiteBuilder** | `lead_enrichments.reviews_data` | `site_configs` | **`site_config` (全套 Awwwards 建站 JSON)** |
+| **Agent 4: VercelAgent** | `site_configs.subdomain` | `deployments` | **`dns_verification` (Vercel 专属 TXT Value)** |
+| **Agent 5: GoDaddyAgent** | `deployments.dns_verification` | `deployments` | `godaddy_status`, `is_published` |
+
+---
+
+## 📊 3. 整合联表视图 (`v_leads_full`)
+
+为确保管理后台与调试接口的高效查询，数据库内建了平滑联表视图：
 ```sql
-CREATE TABLE leads (
-    -- Agent 1: LeadDiscoveryAgent 产出
-    id               VARCHAR(64) PRIMARY KEY,
-    place_id         VARCHAR(255) UNIQUE,
-    name             TEXT NOT NULL,
-    category         VARCHAR(100),
-    address          TEXT,
-    city             VARCHAR(100),
-    canton           VARCHAR(10),
-    language         VARCHAR(10),
-    rating           NUMERIC(3, 2),
-    review_count     INT,
-    google_maps_url  TEXT,
-    
-    -- Agent 2: LeadEnrichmentAgent 产出中间态
-    email            VARCHAR(255),
-    phone            VARCHAR(100),
-    website_hint     TEXT,
-    reviews_data     TEXT,       -- [中间态] 抓取的真实 Google 用户评语列表 (JSON)
-    opening_hours    TEXT,       -- [中间态] 营业时间 JSON
-    services_data    TEXT,       -- [中间态] 主营服务项目与价格表 (JSON)
-    
-    -- Agent 3: SiteBuilderAgent 产出中间态
-    slug             VARCHAR(255) UNIQUE,
-    subdomain        VARCHAR(255) UNIQUE,
-    admin_pass       VARCHAR(100),
-    site_config      TEXT,       -- [中间态] 全套 Awwwards 建站与双语 Content (JSON)
-    
-    -- Agent 4: VercelAgent 产出中间态
-    dns_verification TEXT,       -- [中间态] 从 Vercel API 获取的专属 TXT 验证 Value (JSON)
-    vercel_status    VARCHAR(50) DEFAULT 'unmounted',
-    
-    -- Agent 5: GoDaddyAgent 产出中间态
-    godaddy_status   VARCHAR(50) DEFAULT 'unconfigured',
-    is_published     BOOLEAN DEFAULT TRUE,
-    status           VARCHAR(50) DEFAULT 'discovered',
-    expires_at       TIMESTAMP
-);
+CREATE OR REPLACE VIEW v_leads_full AS
+SELECT 
+    l.id, l.place_id, l.name, l.category, l.address, l.city, l.canton, l.language, l.status, l.created_at,
+    e.email, e.phone, e.website_hint, e.rating, e.review_count, e.google_maps_url, e.reviews_data, e.opening_hours, e.services_data,
+    s.slug, s.subdomain, s.admin_pass, s.site_config,
+    d.dns_verification, d.vercel_status, d.godaddy_status, d.is_published, d.expires_at
+FROM leads l
+LEFT JOIN lead_enrichments e ON l.id = e.lead_id
+LEFT JOIN site_configs s ON l.id = s.lead_id
+LEFT JOIN deployments d ON l.id = d.lead_id;
 ```
 
 ---
 
-## 🔄 2. Multi-Agent 数据流转全景图
-
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Agent 1: LeadDiscoveryAgent                                              │
-│ 产出: name, address, city, rating, place_id                              │
-│ 存库 ➔ leads (status = 'discovered')                                     │
-└────────────────────────────────────┬─────────────────────────────────────┘
-                                     │
-                                     ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Agent 2: LeadEnrichmentAgent                                             │
-│ 产出: reviews_data (真实评论), email, phone, services_data               │
-│ 存库 ➔ UPDATE leads SET reviews_data=..., email=... (status = 'enriched')│
-└────────────────────────────────────┬─────────────────────────────────────┘
-                                     │
-                                     ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Agent 3: SiteBuilderAgent                                                │
-│ 消费: reviews_data + category ➔ 生成 Awwwards site_config & 双语 Content │
-│ 存库 ➔ UPDATE leads SET site_config=... (status = 'configured')          │
-└────────────────────────────────────┬─────────────────────────────────────┘
-                                     │
-                                     ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Agent 4: VercelAgent                                                     │
-│ 消费: subdomain ➔ 调 Vercel API 挂载 ➔ 提取独有 Verification TXT Value    │
-│ 存库 ➔ UPDATE leads SET dns_verification=... (status = 'vercel_mounted') │
-└────────────────────────────────────┬─────────────────────────────────────┘
-                                     │
-                                     ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Agent 5: GoDaddyAgent                                                    │
-│ 消费: 从 DB 读取 dns_verification 独立列 ➔ 写入 GoDaddy CNAME & TXT 记录 │
-│ 触发 ➔ Vercel 二次校验 (verify_domain) ➔ 上线 (status = 'deployed')      │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🚀 常用流水线命令
+## 🚀 运维查验命令
 
 ```bash
-# 1. 重新为全量 Lead 生成并保存 site_config 中间态
-python tools/enrich_and_build_all_leads.py
+# 1. 验证 4 大解耦表的数据独立保存统计
+python tools/verify_relational_tables.py
 
-# 2. 全闭环 5 阶段 Agent 数据流转与全自动挂载/解析
+# 2. 全量闭环 Multi-Agent 联表分流测试
 python tools/auto_provision_closed_loop.py
-
-# 3. 查验 Neon DB 中各中间态字段保存状态
-python tools/check_db_dns_verification.py
 ```
