@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from config import DATABASE_URL, FREE_TRIAL_DAYS
 
-# 如果安装了 psycopg2，则导入支持 PostgreSQL
 try:
     import psycopg2
     import psycopg2.extras
@@ -162,6 +161,18 @@ def lead_exists(place_id: str) -> bool:
 
 
 def insert_lead(data: dict) -> str:
+    # 防重复
+    if lead_exists(data.get("place_id", "")):
+        conn = db.get_connection()
+        if db.is_postgres:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM leads WHERE place_id=%s", (data["place_id"],))
+                lead_id = cur.fetchone()[0]
+        else:
+            lead_id = conn.execute("SELECT id FROM leads WHERE place_id=?", (data["place_id"],)).fetchone()[0]
+        conn.close()
+        return lead_id
+
     lead_id = str(uuid.uuid4())
     conn = db.get_connection()
     full_data = {**data, "id": lead_id}
@@ -196,6 +207,9 @@ def update_lead(lead_id: str, **kwargs):
     if "site_config" in kwargs and isinstance(kwargs["site_config"], (dict, list)):
         kwargs["site_config"] = json.dumps(kwargs["site_config"], ensure_ascii=False)
 
+    if db.is_postgres and "is_published" in kwargs:
+        kwargs["is_published"] = bool(kwargs["is_published"])
+
     conn = db.get_connection()
     if db.is_postgres:
         fields = ", ".join(f"{k}=%({k})s" for k in kwargs)
@@ -229,7 +243,7 @@ def get_lead_by_subdomain(subdomain: str) -> dict | None:
 
 def set_deployed(lead_id: str):
     expires = (datetime.utcnow() + timedelta(days=FREE_TRIAL_DAYS)).isoformat()
-    update_lead(lead_id, status="deployed", expires_at=expires, is_published=1)
+    update_lead(lead_id, status="deployed", expires_at=expires, is_published=True if db.is_postgres else 1)
 
 
 def log_email(lead_id: str, email_type: str, subject: str, body_html: str):
