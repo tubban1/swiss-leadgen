@@ -41,6 +41,8 @@ interface TenantProps {
   email: string;
   rating: string;
   reviewCount: number;
+  siteConfig?: any;
+  reviewsData?: any;
 }
 
 function LangSwitcher({ lang, setLang }: { lang: 'de' | 'fr'; setLang: (l: 'de' | 'fr') => void }) {
@@ -139,7 +141,9 @@ export default function DynamicTenantView({
   phone,
   email,
   rating,
-  reviewCount
+  reviewCount,
+  siteConfig,
+  reviewsData
 }: TenantProps) {
   const [lang, setLang] = useState<'de' | 'fr'>('de');
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -798,66 +802,47 @@ export default function DynamicTenantView({
       stars: 5,
       de: 'Hervorragender Sonntags-Brunch und sehr aufmerksamer Service. Absoluter Geheimtipp!',
       fr: 'Brunch dominical délicieux et service impeccable. Une adresse incontournable!'
-    },
-    {
-      name: 'Simon G.',
-      date: 'Vor 3 Wochen',
-      stars: 5,
-      de: 'Tolles Café mit hausgemachten Törtchen und klasse Barista-Kaffee. Komme jede Woche her.',
-      fr: 'Superbe café avec pâtisseries maison et excellent café barista. J\'y viens chaque semaine.'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#0c0908] text-[#f2ece4] font-sans relative overflow-x-hidden selection:bg-amber-400 selection:text-black">
-      {/* 弥散金赭背光 */}
-      <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-amber-950/20 rounded-full blur-[160px] pointer-events-none"></div>
-
-      {/* Top bar */}
-      <div className="border-b border-white/10 bg-black/40 backdrop-blur-xl py-2.5 px-6 flex items-center justify-between text-xs text-amber-200/70">
-        <div className="flex items-center gap-2">
-          <Coffee className="w-4 h-4 text-amber-400" />
-          <span>{lang === 'de' ? `Café & Bistrot in ${city}` : `Café & Bistrot à ${city}`}</span>
-        </div>
-        <LangSwitcher lang={lang} setLang={setLang} />
-      </div>
+    <div className="min-h-screen bg-[#0e0c0a] text-[#f5f2eb] font-sans relative overflow-x-hidden selection:bg-[#d4af37] selection:text-black">
+      {/* 弥散香槟金背光 */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#d4af37]/10 rounded-full blur-[180px] pointer-events-none"></div>
 
       {/* Header */}
-      <header className="border-b border-white/10 bg-[#0c0908]/80 backdrop-blur-2xl sticky top-0 z-50">
+      <header className="border-b border-white/10 bg-[#0e0c0a]/80 backdrop-blur-2xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <h1 className="font-serif text-2xl font-bold tracking-wider text-amber-100">{name}</h1>
-          <a href={`tel:${phone}`} className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-black font-black text-xs uppercase tracking-wider rounded-xl transition shadow-xl">
-            {lang === 'de' ? 'Tisch Reservieren' : 'Réserver'}
-          </a>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#d4af37] flex items-center justify-center font-serif text-xl">
+              ☕
+            </div>
+            <span className="font-serif text-2xl font-bold text-white tracking-wide">{name}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <LangSwitcher lang={lang} setLang={setLang} />
+            <a href={`tel:${phone}`} className="px-5 py-2 bg-[#d4af37] hover:bg-[#c5a028] text-black font-serif font-bold text-xs uppercase tracking-widest rounded-full transition shadow-lg shadow-[#d4af37]/20">
+              {lang === 'de' ? 'Tisch Reservieren' : 'Réserver'}
+            </a>
+          </div>
         </div>
       </header>
 
       {/* Hero Bento */}
-      <section className="py-20 px-6 max-w-4xl mx-auto text-center space-y-8">
-        <div className="inline-block px-4 py-1.5 rounded-full backdrop-blur-xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 text-amber-300 text-xs font-semibold">
-          ☕️ Barista Specialty Coffee & Cuisine
-        </div>
-        <h2 className="text-4xl sm:text-6xl font-serif font-extrabold text-amber-50 leading-tight">
-          {lang === 'de' ? 'Herzliche Schweizer Gastfreundschaft' : 'Hospitalité Chaleureuse & Conviviale'}
-        </h2>
-        <p className="text-base sm:text-lg text-amber-200/70 font-light max-w-xl mx-auto leading-relaxed">
-          {lang === 'de' ? `Besuchen Sie uns im ${name} in ${city}. Kaffeespezialitäten, frisch zubereitete Speisen und erlesene Weine.` : `Venez nous rendre visite au ${name} à ${city}.`}
-        </p>
-        <div className="pt-2 inline-flex items-center gap-2 backdrop-blur-xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 px-5 py-2.5 rounded-2xl">
-          <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-          <span className="font-bold text-amber-200">{rating} / 5.0</span>
-          <span className="text-xs text-amber-200/60">({reviewCount} {lang === 'de' ? 'Rezensionen' : 'avis'})</span>
-        </div>
-      </section>
-
-      {/* Grid Images */}
-      <section className="max-w-6xl mx-auto px-6 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="rounded-3xl overflow-hidden border border-white/10 ring-1 ring-white/5 h-80">
-            <img src={imgSet.p1} className="w-full h-full object-cover" alt="Coffee" />
+      <section className="py-16 px-6 max-w-7xl mx-auto space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div className="lg:col-span-7 backdrop-blur-2xl bg-white/[0.03] border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl space-y-6">
+            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#d4af37]">Café & Brasserie · {city}</span>
+            <h1 className="text-4xl sm:text-6xl font-serif font-light text-white leading-tight">
+              {lang === 'de' ? 'Schweizer Gastfreundschaft & Echter Kaffeegenuss' : 'Saveurs Authentiques & Convivialité'}
+            </h1>
+            <p className="text-base text-zinc-400 font-light leading-relaxed">
+              {lang === 'de' ? `Ihr gemütliches Café im Herzen von ${city}. Frische regionale Speisen, erstklassige Kaffeespezialitäten.` : `Votre café chaleureux au cœur de ${city}.`}
+            </p>
           </div>
-          <div className="rounded-3xl overflow-hidden border border-white/10 ring-1 ring-white/5 h-80">
-            <img src={imgSet.p2} className="w-full h-full object-cover" alt="Dishes" />
+
+          <div className="lg:col-span-5 rounded-3xl overflow-hidden border border-white/10">
+            <img src={imgSet.hero} alt="Café" className="w-full h-full object-cover" />
           </div>
         </div>
       </section>
@@ -867,12 +852,12 @@ export default function DynamicTenantView({
         lang={lang} 
         rating={rating} 
         reviewCount={reviewCount} 
-        accentBg="bg-amber-400" 
+        accentBg="bg-[#d4af37]" 
         reviews={cafeReviews} 
       />
 
       {/* Footer */}
-      <footer className="py-12 text-center text-xs text-amber-200/50 font-mono">
+      <footer className="py-12 text-center text-xs text-zinc-500 font-mono">
         <p>{name} · {address} · Tel: {phone}</p>
       </footer>
     </div>
