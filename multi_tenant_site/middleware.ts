@@ -5,7 +5,7 @@ export function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const hostname = req.headers.get('host') || '';
 
-  // 避免拦截 Next.js 内部静态资源、API 和图标
+  // 1. 静态资源、内部 API 放行
   if (
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api') ||
@@ -14,31 +14,29 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 提取纯粹的子域名 (如 bakery.sites.tubban.com -> bakery)
-  let currentHost = hostname
-    .replace(`.sites.tubban.com`, '')
-    .replace(`.tubban.com`, '')
-    .replace(`.vercel.app`, '')
-    .replace(`:3000`, '')
-    .replace(`localhost`, '');
+  // 2. 提取真正的子域名前缀
+  let subdomain = '';
+  if (hostname.includes('.sites.tubban.com')) {
+    subdomain = hostname.replace('.sites.tubban.com', '');
+  } else if (hostname.includes('.tubban.com')) {
+    subdomain = hostname.replace('.tubban.com', '');
+  }
 
-  // 如果访问的是主域名 sites.tubban.com 或 admin 子域名，或者路径包含 /admin
-  const isRootDomain = currentHost === 'sites' || currentHost === 'multitenantsite-lac' || currentHost === '' || currentHost === hostname;
-  
-  if (currentHost === 'admin' || isRootDomain || url.pathname.startsWith('/admin')) {
-    if (url.pathname === '/' || url.pathname === '/admin') {
+  // 3. 如果没有子域名或子域名为主站点/Admin 接口
+  if (!subdomain || subdomain === 'sites' || subdomain === 'admin' || hostname.includes('vercel.app')) {
+    if (url.pathname === '/') {
       url.pathname = '/admin/dashboard';
       return NextResponse.rewrite(url);
     }
     return NextResponse.next();
   }
 
-  // 普通多租户动态重定向到 app/[domain]
-  url.pathname = `/${currentHost}${url.pathname}`;
+  // 4. 多租户子域名动态重定向至 /app/[domain]
+  const cleanPath = url.pathname === '/' ? '' : url.pathname;
+  url.pathname = `/${subdomain}${cleanPath}`;
   return NextResponse.rewrite(url);
 }
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
-
