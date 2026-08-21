@@ -34,7 +34,6 @@ async function getLeadBySlug(slug: string) {
       .replace('.sites.tubban.com', '')
       .replace('.tubban.com', '');
 
-    // 查询该域名/subdomain 对应的商户数据
     const rows = await sql`
       SELECT * FROM leads 
       WHERE subdomain ILIKE ${'%' + cleanSlug + '%'} 
@@ -42,7 +41,11 @@ async function getLeadBySlug(slug: string) {
       LIMIT 1;
     `;
 
-    return rows.length > 0 ? rows[0] : null;
+    if (rows.length > 0) {
+      // 避免 PostgreSQL 的 Decimal / Date 对象直接传给 React 组件抛出 500 异常
+      return JSON.parse(JSON.stringify(rows[0]));
+    }
+    return null;
   } catch (err) {
     console.error('Failed to query lead from database:', err);
     return null;
@@ -50,12 +53,12 @@ async function getLeadBySlug(slug: string) {
 }
 
 export default async function TenantPage({ params }: Props) {
-  const rawDomain = params.domain || 'swiss-business';
+  const rawDomain = params?.domain || 'swiss-business';
   
-  // 1. 查询 Neon 数据库数据
+  // 1. 安全查询 Neon 数据库数据
   const leadData = await getLeadBySlug(rawDomain);
 
-  // 2. 数据清洗与渲染格式化
+  // 2. 数据清洗与格式化
   const rawSlug = rawDomain.replace('.sites.tubban.com', '').replace('.tubban.com', '');
   const name = leadData?.name || rawSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   const category = leadData?.category || 'Meisterbetrieb & Gewerbe';
@@ -233,7 +236,7 @@ export default async function TenantPage({ params }: Props) {
           {/* Quick Inquiry Form */}
           <div className="bg-stone-900/90 p-8 rounded-3xl border border-stone-800 space-y-6 shadow-xl">
             <h3 className="text-2xl font-serif font-bold text-white">Unverbindliche Anfrage</h3>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-stone-400 mb-1">Ihr Name</label>
                 <input
