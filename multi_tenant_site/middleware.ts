@@ -3,8 +3,9 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl;
-  // 精准使用 Next.js 官方推荐的 req.nextUrl.hostname
-  const hostname = req.nextUrl.hostname || req.headers.get('host') || '';
+  const hostname = req.headers.get('host') || req.nextUrl.hostname || '';
+
+  console.log(`[Middleware Check] Hostname: ${hostname} | Path: ${url.pathname}`);
 
   // 1. 静态资源、内部 API 路由放行
   if (
