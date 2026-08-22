@@ -155,7 +155,7 @@ def init_db():
 
                     INSERT INTO deployments (id, lead_id, subdomain, dns_verification)
                     SELECT md5(id || 'deploy')::varchar(64), id, subdomain, dns_verification FROM leads WHERE subdomain IS NOT NULL
-                    ON CONFLICT (id) DO NOTHING;
+                    ON CONFLICT (lead_id) DO UPDATE SET subdomain = EXCLUDED.subdomain;
                 """)
                 conn.commit()
             print("✅ CRM 数据库解耦多表 Migration 与数据无缝整合成功 [Neon PostgreSQL]")
@@ -294,7 +294,7 @@ def insert_lead(data: dict) -> str:
             cur.execute("""
                 INSERT INTO deployments (id, lead_id, subdomain)
                 VALUES (%s, %s, %s)
-                ON CONFLICT (id) DO NOTHING;
+                ON CONFLICT (lead_id) DO UPDATE SET subdomain = EXCLUDED.subdomain;
             """, (str(uuid.uuid4()), lead_id, data.get("subdomain")))
             
             conn.commit()
