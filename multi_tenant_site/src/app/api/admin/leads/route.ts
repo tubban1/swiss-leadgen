@@ -14,16 +14,16 @@ export async function GET() {
   try {
     const sql = neon(databaseUrl);
     
-    // 安全获取所有 unique leads
+    // 从 4 表视图 v_leads_full 安全获取全量商户信息 (含唯一的 site_configs.admin_pass)
     const leads = await sql`
-      SELECT l.id, l.name, l.category, l.address, l.city, l.canton, l.language,
-             l.email, l.phone, l.rating, l.review_count, l.subdomain, l.admin_pass,
-             l.status, l.is_published, l.created_at,
-             (SELECT subject FROM email_log WHERE lead_id = l.id ORDER BY sent_at DESC LIMIT 1) as email_subject,
-             (SELECT body_html FROM email_log WHERE lead_id = l.id ORDER BY sent_at DESC LIMIT 1) as email_body,
-             (SELECT type FROM email_log WHERE lead_id = l.id ORDER BY sent_at DESC LIMIT 1) as email_type
-      FROM leads l
-      ORDER BY l.created_at DESC;
+      SELECT v.id, v.name, v.category, v.address, v.city, v.canton, v.language,
+             v.email, v.phone, v.rating, v.review_count, v.subdomain, v.admin_pass,
+             v.status, v.is_published, v.created_at,
+             (SELECT subject FROM email_log WHERE lead_id = v.id ORDER BY sent_at DESC LIMIT 1) as email_subject,
+             (SELECT body_html FROM email_log WHERE lead_id = v.id ORDER BY sent_at DESC LIMIT 1) as email_body,
+             (SELECT type FROM email_log WHERE lead_id = v.id ORDER BY sent_at DESC LIMIT 1) as email_type
+      FROM v_leads_full v
+      ORDER BY v.created_at DESC;
     `;
 
     // 确保格式化为纯 JavaScript 简单类型

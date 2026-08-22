@@ -142,8 +142,8 @@ def init_db():
             cols = [r[0] for r in cur.fetchall()]
             if 'slug' in cols and 'subdomain' in cols:
                 cur.execute("""
-                    INSERT INTO site_configs (lead_id, slug, subdomain, admin_pass, site_config)
-                    SELECT id, slug, subdomain, admin_pass, site_config FROM leads WHERE slug IS NOT NULL
+                    INSERT INTO site_configs (lead_id, slug, subdomain, site_config)
+                    SELECT id, slug, subdomain, site_config FROM leads WHERE slug IS NOT NULL
                     ON CONFLICT (lead_id) DO UPDATE SET 
                         slug = EXCLUDED.slug, 
                         subdomain = EXCLUDED.subdomain,
