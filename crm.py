@@ -203,6 +203,7 @@ def init_db():
                 lead_id          TEXT REFERENCES leads(id),
                 subdomain        TEXT,
                 dns_verification TEXT,
+                cname_target     VARCHAR(255) DEFAULT 'cname.vercel-dns.com',
                 vercel_status    TEXT DEFAULT 'unmounted',
                 godaddy_status   TEXT DEFAULT 'unconfigured',
                 is_published     INTEGER DEFAULT 1,
@@ -272,10 +273,10 @@ def insert_lead(data: dict) -> str:
     if db.is_postgres:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO leads (id, place_id, name, category, address, city, canton, language, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'discovered')
+                INSERT INTO leads (id, place_id, name, category, address, city, canton, language, status, slug, subdomain)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'discovered', %s, %s)
             """, (lead_id, place_id, data.get("name"), data.get("category"), data.get("address"),
-                  data.get("city"), data.get("canton"), data.get("language")))
+                  data.get("city"), data.get("canton"), data.get("language"), data.get("slug"), data.get("subdomain")))
             
             cur.execute("""
                 INSERT INTO lead_enrichments (lead_id, email, phone, website_hint, rating, review_count, google_maps_url)
@@ -338,7 +339,7 @@ def update_lead(lead_id: str, **kwargs):
     if db.is_postgres:
         with conn.cursor() as cur:
             # 1. 主表
-            lead_fields = {k: v for k, v in kwargs.items() if k in ["name", "category", "address", "city", "canton", "language", "status"]}
+            lead_fields = {k: v for k, v in kwargs.items() if k in ["name", "category", "address", "city", "canton", "language", "status", "slug", "subdomain"]}
             if lead_fields:
                 lead_fields["updated_at"] = now_iso
                 stmt = ", ".join(f"{k}=%({k})s" for k in lead_fields)
@@ -359,7 +360,7 @@ def update_lead(lead_id: str, **kwargs):
                 cur.execute(f"UPDATE site_configs SET {stmt} WHERE lead_id=%(_id)s", {**site_fields, "_id": lead_id})
 
             # 4. 部署表
-            deploy_fields = {k: v for k, v in kwargs.items() if k in ["subdomain", "dns_verification", "vercel_status", "godaddy_status", "is_published", "expires_at"]}
+            deploy_fields = {k: v for k, v in kwargs.items() if k in ["subdomain", "dns_verification", "cname_target", "vercel_status", "godaddy_status", "is_published", "expires_at"]}
             if deploy_fields:
                 deploy_fields["updated_at"] = now_iso
                 if "is_published" in deploy_fields:
