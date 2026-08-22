@@ -32,8 +32,60 @@ class WebsiteBuilder:
         review_count = int(lead.get("review_count") or 35)
         slug = lead.get("slug") or (subdomain.split(".")[0] if subdomain else "merchant")
 
-        # 区分行业的专属色彩与文案主题
+        # 区分行业的专属色彩与文案主题（涵盖全量商业场景）
         theme_presets = {
+            "optik": {
+                "primary": "#061A23", "secondary": "#06B6D4", "accent": "#38BDF8",
+                "background": "#040D12", "surface": "#09222E", "preset": "optic-teal",
+                "tagline_de": "Seh- & Hörexperten in Ihrer Region",
+                "tagline_fr": "Experts en Optique et Audition Sur-Mesure",
+                "hero_de": "Präzisions-Sehtest & Schweizer Markenbrillen",
+                "hero_fr": "Examen de la Vue & Lunettes de Marque Suisse",
+                "services": [
+                    {"id": "srv_1", "slug": "sehtest-kostenlos", "name": {"de": "3D-Präzisions-Sehtest", "fr": "Examen de la Vue 3D"}, "description": {"de": "Exakte Bestimmung Ihrer Sehstärke mit modernster Optik-Technologie.", "fr": "Mesure précise de la vue avec équipement optique haute précision."}, "price": {"amount": "45.00", "currency": "CHF"}, "icon": "sparkles"},
+                    {"id": "srv_2", "slug": "gleitsichtbrillen", "name": {"de": "Individuelle Gleitsichtbrillen", "fr": "Verres Progressifs Personnalisés"}, "description": {"de": "Perfekter Sehkomfort in allen Entfernungen mit Schweizer Premium-Gläsern.", "fr": "Confort visuel optimal à toutes distances avec verres de qualité suisse."}, "price": {"amount": "ab CHF 390.-", "currency": "CHF"}, "icon": "shield"},
+                    {"id": "srv_3", "slug": "hoerberatung", "name": {"de": "Hörakustik & Hörtest", "fr": "Bilan Auditif & Appareils"}, "description": {"de": "Kostenlose Hörberatung und unsichtbare moderne Hörsysteme.", "fr": "Conseil gratuit et systèmes auditifs modernes presque invisibles."}, "price": {"amount": "Kostenlos", "currency": "CHF"}, "icon": "user"}
+                ]
+            },
+            "restaurant": {
+                "primary": "#1A0F0D", "secondary": "#E11D48", "accent": "#FB7185",
+                "background": "#0F0806", "surface": "#261513", "preset": "gourmet-rose",
+                "tagline_de": "Feine Schweizer & Mediterrane Küche",
+                "tagline_fr": "Cuisine Gastronomique & Spécialités Suisses",
+                "hero_de": "Kulinarische Genüsse & Gemütliches Ambiente",
+                "hero_fr": "Plaisirs Gastronomiques & Ambiance Chaleureuse",
+                "services": [
+                    {"id": "srv_1", "slug": "tagesmenue", "name": {"de": "Frisches Tagesmenü & Lunch", "fr": "Menu du Jour & Déjeuner"}, "description": {"de": "Saisonal zubereitete Spezialitäten mit Zutaten aus der Region.", "fr": "Spécialités de saison préparées avec des produits locaux."}, "price": {"amount": "24.50", "currency": "CHF"}, "icon": "sparkles"},
+                    {"id": "srv_2", "slug": "a-la-carte", "name": {"de": "À la Carte & Schweizer Klassiker", "fr": "Carte Gastronomique & Classiques"}, "description": {"de": "Zartes Entrecôte, Rösti-Variationen und erlesene Weine.", "fr": "Entrecôte tendre, déclinaisons de Rösti et vins d'exception."}, "price": {"amount": "ab CHF 32.-", "currency": "CHF"}, "icon": "flame"},
+                    {"id": "srv_3", "slug": "tischreservierung", "name": {"de": "Tischreservierung & Events", "fr": "Réservation de Table & Événements"}, "description": {"de": "Planen Sie Ihre Familienfeier oder Ihr Geschäftsessen bei uns.", "fr": "Réservez votre table pour vos repas d'affaires ou fêtes de famille."}, "price": {"amount": "Kostenlos", "currency": "CHF"}, "icon": "user"}
+                ]
+            },
+            "bar": {
+                "primary": "#120B1B", "secondary": "#A855F7", "accent": "#C084FC",
+                "background": "#0A0612", "surface": "#1E122D", "preset": "velvet-night",
+                "tagline_de": "Exklusive Cocktails & Urban Spirit",
+                "tagline_fr": "Cocktails Crépusculaires & Ambiance Lounge",
+                "hero_de": "Der Treffpunkt für Cocktails & Entspannung",
+                "hero_fr": "Le Rendez-vous Cocktails & Lounge",
+                "services": [
+                    {"id": "srv_1", "slug": "signature-cocktails", "name": {"de": "Signature Cocktails & Spirituosen", "fr": "Cocktails Création & Spiritueux"}, "description": {"de": "Meisterhaft gemixte Cocktails von unseren erfahrenen Barkeepern.", "fr": "Cocktails savamment préparés par nos bartenders passionnés."}, "price": {"amount": "16.50", "currency": "CHF"}, "icon": "sparkles"},
+                    {"id": "srv_2", "slug": "apero-plattli", "name": {"de": "Schweizer Apéro-Plättli", "fr": "Planche Apéritif Suisse"}, "description": {"de": "Feinster Schweizer Käse, Trockenfleisch und frisches Brot.", "fr": "Sélection de fromages suisses, viande séchée et pain frais."}, "price": {"amount": "28.00", "currency": "CHF"}, "icon": "flame"},
+                    {"id": "srv_3", "slug": "craft-beer", "name": {"de": "Regionale Craft Biersorten", "fr": "Bières Artisanales Locales"}, "description": {"de": "Frisch gezapfte Bierspezialitäten aus lokalen Brauereien.", "fr": "Bières pression pression issues de brasseries locales."}, "price": {"amount": "7.50", "currency": "CHF"}, "icon": "croissant"}
+                ]
+            },
+            "cafe": {
+                "primary": "#1C140E", "secondary": "#F59E0B", "accent": "#FBBF24",
+                "background": "#120B07", "surface": "#2B1E16", "preset": "coffee-roast",
+                "tagline_de": "Specialty Coffee & Hausgemachter Kuchen",
+                "tagline_fr": "Café de Spécialité & Pâtisseries Maison",
+                "hero_de": "Bester Kaffee & Entspannte Genussmomente",
+                "hero_fr": "Meilleur Café & Moments de Détente",
+                "services": [
+                    {"id": "srv_1", "slug": "espresso-bar", "name": {"de": "Specialty Espresso & Cappuccino", "fr": "Espresso & Cappuccino Pur Pur"}, "description": {"de": "Frisch geröstete Arabica-Bohnen von zertifizierten Höfen.", "fr": "Grains Arabica fraîchement torréfiés de plantations certifiées."}, "price": {"amount": "4.80", "currency": "CHF"}, "icon": "croissant"},
+                    {"id": "srv_2", "slug": "hausgemachter-kuchen", "name": {"de": "Hausgemachte Kuchen & Gebäck", "fr": "Gâteaux Maison & Desserts"}, "description": {"de": "Täglich frisch gebackene Fruchtwähen und Schokoladentorten.", "fr": "Tartes aux fruits et gâteaux au chocolat faits maison chaque jour."}, "price": {"amount": "6.20", "currency": "CHF"}, "icon": "sparkles"},
+                    {"id": "srv_3", "slug": "brunch-box", "name": {"de": "Schweizer Sonntags-Brunch", "fr": "Brunch Dominical Suisse"}, "description": {"de": "Reichhaltiges Frühstück mit Zopf, Käse und Bio-Eiern.", "fr": "Petit-déjeuner copieux avec tresse suisse, fromage et œufs bio."}, "price": {"amount": "32.00", "currency": "CHF"}, "icon": "flame"}
+                ]
+            },
             "bakery": {
                 "primary": "#8B4513", "secondary": "#D4A017", "accent": "#F59E0B",
                 "background": "#0F0C09", "surface": "#1E1813", "preset": "warm-artisan",
@@ -85,10 +137,53 @@ class WebsiteBuilder:
                     {"id": "srv_2", "slug": "rohrreinigung", "name": {"de": "Rohr- & Abflussreinigung", "fr": "Débouchage Canalisation"}, "description": {"de": "Beseitigung von Verstopfungen mit Kamera.", "fr": "Inspection caméra et nettoyage haute pression."}, "price": {"amount": "180.00", "currency": "CHF"}, "icon": "wrench"},
                     {"id": "srv_3", "slug": "badsanierung", "name": {"de": "Badsanierung & Heizungswechsel", "fr": "Rénovation Salle de Bain"}, "description": {"de": "Komplettumbau nach Schweizer Normen.", "fr": "Installation et rénovation sur-mesure."}, "price": {"amount": "von CHF 2000.-", "currency": "CHF"}, "icon": "shield"}
                 ]
+            },
+            "generic_business": {
+                "primary": "#0A1128", "secondary": "#3B82F6", "accent": "#60A5FA",
+                "background": "#050914", "surface": "#101B3B", "preset": "modern-blue",
+                "tagline_de": "Ihr verlässlicher Partner in der Region",
+                "tagline_fr": "Votre partenaire de confiance dans la région",
+                "hero_de": "Erstklassige Schweizer Qualität & Service",
+                "hero_fr": "Qualité Suisse d'Excellence & Service",
+                "services": [
+                    {"id": "srv_1", "slug": "beratung", "name": {"de": "Persönliche Fachberatung", "fr": "Conseil Personnalisé"}, "description": {"de": "Individuelle Betreuung und Maßgeschneiderte Lösungen.", "fr": "Prise en charge individuelle et solutions sur-mesure."}, "price": {"amount": "Kostenlos", "currency": "CHF"}, "icon": "sparkles"},
+                    {"id": "srv_2", "slug": "qualitaets-service", "name": {"de": "Schweizer Qualitäts-Service", "fr": "Service de Qualité Suisse"}, "description": {"de": "Höchste Präzision und Verlässlichkeit für Ihre Anliegen.", "fr": "Haute précision et fiabilité garanties."}, "price": {"amount": "Auf Anfrage", "currency": "CHF"}, "icon": "shield"},
+                    {"id": "srv_3", "slug": "notfall-kontakt", "name": {"de": "Schneller Vor-Ort Support", "fr": "Support Rapide Sur-Place"}, "description": {"de": "Wir sind jederzeit schnell für Sie erreichbar.", "fr": "Assistance rapide à votre service."}, "price": {"amount": "Inklusive", "currency": "CHF"}, "icon": "user"}
+                ]
             }
         }
 
-        t_info = theme_presets.get(category, theme_presets["sanitaer"])
+        # 智能根据分类或名称关键词确定匹配主题
+        cat_lower = (category or "").lower()
+        name_lower = name.lower()
+
+        if "optik" in cat_lower or "optik" in name_lower or "hörakustik" in name_lower:
+            t_info = theme_presets["optik"]
+            category = "optik"
+        elif "restaurant" in cat_lower or "brasserie" in name_lower or "gastronomie" in cat_lower:
+            t_info = theme_presets["restaurant"]
+            category = "restaurant"
+        elif "bar" in cat_lower or "bistro" in name_lower or "pub" in name_lower:
+            t_info = theme_presets["bar"]
+            category = "bar"
+        elif "café" in cat_lower or "cafe" in cat_lower or "kabel" in name_lower:
+            t_info = theme_presets["cafe"]
+            category = "cafe"
+        elif "bakery" in cat_lower or "bäckerei" in name_lower or "boulangerie" in name_lower:
+            t_info = theme_presets["bakery"]
+            category = "bakery"
+        elif "hair" in cat_lower or "coiffeur" in name_lower or "coiffure" in name_lower or "salon" in name_lower:
+            t_info = theme_presets["hair_salon"]
+            category = "hair_salon"
+        elif "dentist" in cat_lower or "zahnarzt" in name_lower or "dentaire" in name_lower:
+            t_info = theme_presets["dentist"]
+            category = "dentist"
+        elif "sanitär" in cat_lower or "sanitaer" in cat_lower or "heizung" in name_lower:
+            t_info = theme_presets["sanitaer"]
+            category = "sanitaer"
+        else:
+            t_info = theme_presets.get(cat_lower, theme_presets["generic_business"])
+
 
         # 生成标准的 site_config 映射架构
         config = {
