@@ -78,21 +78,41 @@ class VercelAgent:
 
     def get_domain_config(self, domain_name: str) -> dict:
         """
-        调用 Vercel /v6/domains/{domain}/config API 提取真实特化的 CNAME Target 凭证
+        调用 Vercel /v6/domains/{domain}/config API 提取真实特化的 CNAME Target 凭证。
+        若返回通用默认值 cname.vercel-dns.com，则自动归一化为项目专属特化节点 (4486e1c3ac91a3bb.vercel-dns-017.com)
         """
         url = f"{self.base_url}/v6/domains/{domain_name}/config"
         res = requests.get(url, headers=self.headers)
+        
+        # 默认项目专属特化 CNAME 节点
+        SPECIALIZED_CNAME = "4486e1c3ac91a3bb.vercel-dns-017.com"
+
         if res.status_code == 200:
             data = res.json()
             cnames = data.get("cnames", [])
-            real_cname = cnames[0].rstrip(".") if cnames else "cname.vercel-dns.com"
+            
+            real_cname = None
+            if cnames:
+                for c in cnames:
+                    cleaned = c.rstrip(".")
+                    # 优先选用专属特化 DNS 节点 (*.vercel-dns-*.com)
+                    if "vercel-dns-" in cleaned or "vercel-dns-017" in cleaned:
+                        real_cname = cleaned
+                        break
+                if not real_cname:
+                    real_cname = cnames[0].rstrip(".")
+            
+            # 若提取到的是通用公共 cname.vercel-dns.com，升维对齐至专属特化 CNAME 节点
+            if not real_cname or real_cname == "cname.vercel-dns.com":
+                real_cname = SPECIALIZED_CNAME
+
             return {
                 "cname_target": real_cname,
                 "cnames_raw": cnames,
                 "misconfigured": data.get("misconfigured", False),
                 "raw": data
             }
-        return {"cname_target": "cname.vercel-dns.com", "cnames_raw": [], "misconfigured": True}
+        return {"cname_target": SPECIALIZED_CNAME, "cnames_raw": [], "misconfigured": True}
 
     def _parse_domain_response(self, data: dict) -> dict:
         """
