@@ -1,4 +1,5 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { neon } from '@neondatabase/serverless';
 import DynamicTenantView from './TenantClientView';
 
@@ -49,6 +50,12 @@ async function getLeadBySlug(slug: string) {
 
 export default async function TenantPage({ params }: Props) {
   const rawDomain = params?.domain || 'swiss-business';
+
+  // 关键物理防线：若 domain 误入 admin 路径，瞬间重定向至商户 Admin Portal 页面
+  if (rawDomain === 'admin' || rawDomain.endsWith('/admin')) {
+    redirect('/admin/merchant');
+  }
+
   const leadData = await getLeadBySlug(rawDomain);
 
   const rawSlug = rawDomain.replace('.sites.tubban.com', '').replace('.tubban.com', '');
