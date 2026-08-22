@@ -76,15 +76,38 @@ class VercelAgent:
             print(f"   ⚠️ [Vercel API] 解绑域名失败 [{res.status_code}]: {res.text}")
             return False
 
+    def get_domain_config(self, domain_name: str) -> dict:
+        """
+        调用 Vercel /v6/domains/{domain}/config API 提取真实特化的 CNAME Target 凭证
+        """
+        url = f"{self.base_url}/v6/domains/{domain_name}/config"
+        res = requests.get(url, headers=self.headers)
+        if res.status_code == 200:
+            data = res.json()
+            cnames = data.get("cnames", [])
+            real_cname = cnames[0].rstrip(".") if cnames else "cname.vercel-dns.com"
+            return {
+                "cname_target": real_cname,
+                "cnames_raw": cnames,
+                "misconfigured": data.get("misconfigured", False),
+                "raw": data
+            }
+        return {"cname_target": "cname.vercel-dns.com", "cnames_raw": [], "misconfigured": True}
+
     def _parse_domain_response(self, data: dict) -> dict:
         """
-        提取 Vercel 响应数据中的验证凭证 (TXT Value)
+        提取 Vercel 响应数据中的验证凭证 (TXT Value) 及其真实的 CNAME Target
         """
         domain = data.get("name", "")
         verified = data.get("verified", False)
         verification = data.get("verification", [])
         
-        # 打印提取到的关键 TXT Value 凭证
+        # 实时查询 Vercel Config API 提取真实 CNAME 目标
+        config_res = self.get_domain_config(domain)
+        real_cname_target = config_res.get("cname_target", "cname.vercel-dns.com")
+
+        # 打印提取到的关键凭证
+        print(f"      📌 提取真实 CNAME Target ➔ {real_cname_target}")
         if verification:
             for item in verification:
                 print(f"      📌 提取验证凭证 -> Type: {item.get('type')}, Target: {item.get('domain')}, Value: {item.get('value')}")
@@ -93,5 +116,7 @@ class VercelAgent:
             "domain": domain,
             "verified": verified,
             "verification": verification,
+            "cname_target": real_cname_target,
             "raw": data
         }
+
