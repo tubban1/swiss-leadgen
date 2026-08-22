@@ -20,9 +20,9 @@ export async function POST(request: Request) {
       .replace('.sites.tubban.com', '')
       .replace('.tubban.com', '');
 
-    // 校验身份
+    // 唯一密码比对 (site_configs.admin_pass)
     const leads = await sql`
-      SELECT l.id, l.admin_pass, sc.admin_pass as sc_admin_pass
+      SELECT l.id, sc.admin_pass
       FROM leads l
       LEFT JOIN site_configs sc ON l.id = sc.lead_id
       WHERE l.subdomain ILIKE ${'%' + cleanDomain + '%'}
@@ -36,28 +36,19 @@ export async function POST(request: Request) {
     }
 
     const lead = leads[0];
-    const isValidPass = (lead.admin_pass && lead.admin_pass === inputPass) ||
-                        (lead.sc_admin_pass && lead.sc_admin_pass === inputPass);
-
-    if (!isValidPass) {
+    if (!lead.admin_pass || lead.admin_pass !== inputPass) {
       return NextResponse.json({ error: 'Unauthorized: Invalid password' }, { status: 401 });
     }
 
     const leadId = lead.id;
     const siteConfigStr = typeof siteConfig === 'string' ? siteConfig : JSON.stringify(siteConfig);
 
-    // 同步更新 site_configs 表和 leads 表中的 site_config 和 admin_pass
+    // 唯一在 site_configs 表中落盘更新 site_config 和 admin_pass
     await sql`
       INSERT INTO site_configs (lead_id, site_config, admin_pass, updated_at)
       VALUES (${leadId}, ${siteConfigStr}, ${inputPass}, NOW())
       ON CONFLICT (lead_id)
       DO UPDATE SET site_config = ${siteConfigStr}, admin_pass = ${inputPass}, updated_at = NOW();
-    `;
-
-    await sql`
-      UPDATE leads
-      SET site_config = ${siteConfigStr}, admin_pass = ${inputPass}, updated_at = NOW()
-      WHERE id = ${leadId};
     `;
 
     return NextResponse.json({

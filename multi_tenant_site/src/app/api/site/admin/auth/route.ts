@@ -20,11 +20,10 @@ export async function POST(request: Request) {
       .replace('.sites.tubban.com', '')
       .replace('.tubban.com', '');
 
-    // 查询该子域名的真实 lead 记录，使用 COALESCE(sc.admin_pass, l.admin_pass)
+    // 唯一 True Source of Truth：查询 site_configs 表中的 admin_pass 记录
     const leads = await sql`
       SELECT l.id, l.name, l.subdomain, 
-             COALESCE(sc.admin_pass, l.admin_pass) as admin_pass,
-             l.admin_pass as lead_admin_pass,
+             sc.admin_pass,
              COALESCE(sc.site_config, l.site_config) as site_config
       FROM leads l
       LEFT JOIN site_configs sc ON l.id = sc.lead_id
@@ -40,11 +39,8 @@ export async function POST(request: Request) {
     const lead = leads[0];
     const inputPass = pass.trim();
     
-    // 兼容校验：主密码与备份密码均视为有效
-    const isValidPass = (lead.admin_pass && lead.admin_pass === inputPass) ||
-                        (lead.lead_admin_pass && lead.lead_admin_pass === inputPass);
-
-    if (!isValidPass) {
+    // 唯一密码严格比对
+    if (!lead.admin_pass || lead.admin_pass !== inputPass) {
       return NextResponse.json({ error: 'Ungültiges Passwort (Invalid password)' }, { status: 401 });
     }
 
