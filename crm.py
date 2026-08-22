@@ -122,8 +122,9 @@ def init_db():
             """)
 
             # 视图 View: 聚合 4 表
+            cur.execute("DROP VIEW IF EXISTS v_leads_full CASCADE;")
             cur.execute("""
-                CREATE OR REPLACE VIEW v_leads_full AS
+                CREATE VIEW v_leads_full AS
                 SELECT 
                     l.id, l.place_id, l.name, l.category, l.address, l.city, l.canton, l.language, l.status, l.created_at,
                     e.email, e.phone, e.website_hint, e.rating, e.review_count, e.google_maps_url, e.reviews_data, e.opening_hours, e.services_data,
