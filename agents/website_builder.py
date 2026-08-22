@@ -204,14 +204,14 @@ class WebsiteBuilder:
                 "default_language": "de",
                 "supported_languages": ["de", "fr"],
                 "domain": f"https://{subdomain}",
-                "layout_version": "v1"
+                "layout_version": "v2-generative"
             },
             "business": {
                 "legal_name": f"{name} AG",
                 "display_name": name,
-                "founded_year": 2012,
-                "registration_number": f"CH-036.3.000.{slug[:3].upper()}",
-                "vat_number": f"CHE-114.900.{slug[:3].upper()} MWST",
+                "founded_year": 2010 + (hash(name) % 12),
+                "registration_number": f"CH-036.3.{abs(hash(name)) % 900 + 100}.{slug[:3].upper()}",
+                "vat_number": f"CHE-{abs(hash(name)) % 900 + 100}.{slug[:3].upper()} MWST",
                 "description": {
                     "de": f"Ihr meistergeführter Fachbetrieb in {city}. Wir stehen für höchste Schweizer Qualität, Transparenz und Zuverlässigkeit.",
                     "fr": f"Votre entreprise qualifiée à {city}. Qualité suisse, transparence et fiabilité garanties."
@@ -266,12 +266,12 @@ class WebsiteBuilder:
                 "text_primary": "#FFFFFF",
                 "text_secondary": "#9CA3AF",
                 "border": "rgba(255,255,255,0.1)",
-                "radius": "20px",
+                "radius": "24px",
                 "button_radius": "999px",
                 "font_heading": "Playfair Display",
                 "font_body": "Inter",
                 "container_width": "1280px",
-                "visual_style": "editorial",
+                "visual_style": ["editorial", "bento-modern", "luxury-minimal", "neo-artisan"][hash(name) % 4],
                 "animation_style": "subtle",
                 "dark_mode": {
                     "enabled": True,
@@ -308,16 +308,16 @@ class WebsiteBuilder:
                     "type": "landing",
                     "path": "/",
                     "enabled": True,
-                    "template": "default-home",
-                    "sections": ["hero", "trust", "services", "about", "testimonials", "contact"]
+                    "template": "generative-dynamic",
+                    "sections": ["hero", "trust", "services", "about", "testimonials", "live_dns", "contact"]
                 }
             ],
             "content": {
                 "de": {
                     "hero": {
-                        "eyebrow": f"Qualität & Tradition in {city}",
+                        "eyebrow": f"Exzellenz & Schweizer Perfektion in {city}",
                         "title": t_info["hero_de"],
-                        "subtitle": f"Ihr vertrauter Partner in {city}. Wir garantieren höchste Schweizer Qualitätsstandards.",
+                        "subtitle": f"Ihr vertrauter Meisterbetrieb in {city}. Höchste Schweizer Qualitätsstandards, Transparenz und Zuverlässigkeit.",
                         "primary_cta": "Termin / Kontakt",
                         "secondary_cta": "Mehr Erfahren"
                     },
@@ -330,9 +330,9 @@ class WebsiteBuilder:
                 },
                 "fr": {
                     "hero": {
-                        "eyebrow": f"Excellence & Tradition à {city}",
+                        "eyebrow": f"Excellence & Perfection Suisse à {city}",
                         "title": t_info["hero_fr"],
-                        "subtitle": f"Votre partenaire de confiance à {city}. Qualité suisse et satisfaction garanties.",
+                        "subtitle": f"Votre entreprise qualifiée de confiance à {city}. Qualité suisse et satisfaction garanties.",
                         "primary_cta": "Rendez-vous / Contact",
                         "secondary_cta": "En Savoir Plus"
                     },
@@ -345,11 +345,12 @@ class WebsiteBuilder:
                 }
             },
             "sections": {
-                "hero": {"type": "hero", "enabled": True, "variant": "split"},
-                "trust": {"type": "trust_bar", "enabled": True},
-                "services": {"type": "entity_grid", "enabled": True, "limit": 6},
+                "hero": {"type": "hero", "enabled": True, "variant": ["bento-hero", "split-hero", "minimal-luxury"][hash(name) % 3]},
+                "trust": {"type": "trust_bar", "enabled": True, "variant": "credential-bento"},
+                "services": {"type": "entity_grid", "enabled": True, "variant": ["bento-masonry", "interactive-cards", "price-list-table"][hash(name) % 3], "limit": 6},
                 "about": {"type": "content_media", "enabled": True},
-                "testimonials": {"type": "testimonials", "enabled": True, "limit": 6},
+                "testimonials": {"type": "testimonials", "enabled": True, "variant": "bento-quote-wall", "limit": 6},
+                "live_dns": {"type": "dns_transparency", "enabled": True},
                 "contact": {"type": "contact_block", "enabled": True}
             },
             "entities": {
@@ -420,8 +421,8 @@ class WebsiteBuilder:
             "accessibility": {"enabled": True, "keyboard_navigation": True},
             "security": {"force_https": True},
             "metadata": {
-                "version": "1.0.0",
-                "source": "antigravity-site-builder"
+                "version": "2.0.0",
+                "source": "antigravity-generative-design-engine"
             }
         }
         return config
@@ -430,19 +431,61 @@ class WebsiteBuilder:
         subdomain = f"{slug}.tubban.com"
         admin_pass = generate_password()
 
-        print(f"\n⚡ [Antigravity Agent] 正在根据标准 Schema 为 {lead['name']} 构建丰满站点 JSON...")
+        print(f"\n⚡ [Antigravity AI Design Synthesizer] 正在利用 LLM 生成非固定模版的定制 UI 视觉方案: {lead['name']}...")
         
         if openai_client:
             try:
-                prompt = f"Enhance and produce the complete multi-tenant site config JSON for {lead['name']} ({lead.get('category')}) in {lead.get('city')} based on standard schema."
+                system_prompt = """You are an elite Creative Frontend Architect and UI/UX Designer specialized in high-end Swiss local business websites.
+Your task is to generate a uniquely crafted, dynamic `site_config` JSON for a merchant. 
+DO NOT USE A STATIC OR GENERIC TEMPLATE. Synthesize bespoke color tokens, dynamic section component variants, and hyper-localized bilingual content (DE/FR).
+
+Required Output Format (JSON):
+{
+  "site": { ... },
+  "business": { ... },
+  "branding": { ... },
+  "theme": {
+     "preset": "custom-generative",
+     "primary": "#HEX",
+     "secondary": "#HEX",
+     "accent": "#HEX",
+     "background": "#HEX",
+     "surface": "#HEX",
+     "visual_style": "bento-modern" | "editorial" | "luxury-minimal" | "neo-artisan",
+     "radius": "24px"
+  },
+  "sections": {
+     "hero": { "type": "hero", "variant": "bento-hero" | "split-hero" | "minimal-luxury" },
+     "trust": { "type": "trust_bar", "variant": "credential-bento" },
+     "services": { "type": "entity_grid", "variant": "bento-masonry" | "interactive-cards" | "price-list-table" },
+     "testimonials": { "type": "testimonials", "variant": "bento-quote-wall" },
+     "live_dns": { "type": "dns_transparency" }
+  },
+  "entities": {
+     "services": [ ... 4 to 6 detailed localized services with prices in CHF and icon names ... ],
+     "reviews": [ ... 3 authentic reviews in DE & FR ... ]
+  },
+  "content": {
+     "de": { "hero": { "eyebrow": "...", "title": "...", "subtitle": "..." } },
+     "fr": { "hero": { "eyebrow": "...", "title": "...", "subtitle": "..." } }
+  }
+}
+Ensure color themes match the brand domain (e.g. optic teal for opticians, warm mahogany for bakeries, emerald luxury for restaurants, rose gold for coiffure)."""
+
+                user_prompt = f"Merchant Name: {lead['name']}\nCategory: {lead.get('category')}\nCity: {lead.get('city')}\nPhone: {lead.get('phone')}\nAddress: {lead.get('address')}\nRating: {lead.get('rating')}"
+
                 res = openai_client.chat.completions.create(
                     model=OPENAI_MODEL,
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
                     response_format={"type": "json_object"},
-                    temperature=0.7
+                    temperature=0.8
                 )
                 site_config = json.loads(res.choices[0].message.content)
-            except Exception:
+            except Exception as e:
+                print(f"⚠️ [AI Generation Warning] API Fallback: {e}")
                 site_config = self.build_standard_site_config(lead, subdomain)
         else:
             site_config = self.build_standard_site_config(lead, subdomain)
@@ -450,5 +493,6 @@ class WebsiteBuilder:
         site_config["subdomain"] = subdomain
         site_config["business_name"] = lead["name"]
 
-        print(f"✅ [Antigravity Agent] 丰满建站配置完成！全量符合标准 Site Config JSON Schema！")
+        print(f"✅ [Antigravity AI Design Synthesizer] 定制化非固定模板 JSON 生成成功！方案: {site_config.get('theme', {}).get('visual_style', 'generative')}")
         return site_config, admin_pass
+

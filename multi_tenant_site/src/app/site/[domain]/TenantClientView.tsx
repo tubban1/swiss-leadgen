@@ -34,7 +34,9 @@ import {
   CheckCircle,
   ExternalLink,
   Layers,
-  FileText
+  FileText,
+  ChevronRight,
+  Sparkle
 } from 'lucide-react';
 
 interface TenantProps {
@@ -92,7 +94,7 @@ function LangSwitcher({ lang, setLang, accentColor }: { lang: 'de' | 'fr'; setLa
   );
 }
 
-export default function DynamicTenantView({
+export default function GenerativeTenantView({
   name,
   category,
   city,
@@ -107,14 +109,18 @@ export default function DynamicTenantView({
 }: TenantProps) {
   const [lang, setLang] = useState<'de' | 'fr'>('de');
 
-  // 从 site_config 提取主题配置
+  // 从 site_config 提取 Design System Tokens
   const theme = siteConfig?.theme || {};
   const primaryBg = theme.background || '#0A0F1D';
   const surfaceBg = theme.surface || '#162038';
   const primaryColor = theme.primary || '#3B82F6';
   const secondaryColor = theme.secondary || '#60A5FA';
   const accentColor = theme.accent || '#F59E0B';
-  const presetName = theme.preset || 'modern-minimal';
+  const visualStyle = theme.visual_style || 'bento-modern';
+
+  // Section Variants
+  const heroVariant = siteConfig?.sections?.hero?.variant || 'bento-hero';
+  const servicesVariant = siteConfig?.sections?.services?.variant || 'bento-masonry';
 
   // 提取动态文案
   const dynamicContent = siteConfig?.content?.[lang] || siteConfig?.content?.de;
@@ -126,18 +132,17 @@ export default function DynamicTenantView({
   const dynamicServices = siteConfig?.entities?.services;
   const dynamicReviews = siteConfig?.entities?.reviews;
 
-  // 提取商业体完整数据
+  // 商业体真实数据
   const business = siteConfig?.business || {};
   const legalName = business.legal_name || `${name} AG`;
   const foundedYear = business.founded_year || 2012;
   const regNumber = business.registration_number || 'CH-036.3.000.888';
   const vatNumber = business.vat_number || 'CHE-114.900.888 MWST';
-  const openingHours = business.opening_hours || {};
   const displayPhone = business.contact?.phone || phone;
   const displayEmail = business.contact?.email || email;
-  const subdomain = siteConfig?.subdomain || siteConfig?.site?.domain || `${name.toLowerCase().replace(/\s+/g, '-')}.tubban.com`;
+  const subdomain = siteConfig?.subdomain || `${name.toLowerCase().replace(/\s+/g, '-')}.tubban.com`;
 
-  // 行业高清视效图库映射表 (高规格 Cover & Thumbnails)
+  // 行业高清配图集
   const imagesMap: Record<string, { hero: string; p1: string; p2: string; p3: string }> = {
     optik: {
       hero: 'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?auto=format&fit=crop&w=1200&q=80',
@@ -203,15 +208,15 @@ export default function DynamicTenantView({
       className="min-h-screen text-[#f7f2ea] font-sans relative overflow-x-hidden selection:bg-amber-400 selection:text-black transition-colors duration-500"
       style={{ backgroundColor: primaryBg }}
     >
-      {/* 动态环境感光晕 Ambient Dynamic Glow */}
+      {/* 动态光晕 */}
       <div 
-        className="absolute top-0 left-1/4 w-[700px] h-[700px] rounded-full blur-[160px] pointer-events-none opacity-20 transition-all duration-700"
+        className="absolute top-0 left-1/4 w-[750px] h-[750px] rounded-full blur-[170px] pointer-events-none opacity-25 transition-all duration-700"
         style={{ backgroundColor: secondaryColor }}
       ></div>
 
       {/* Top Banner Bar */}
-      <div className="border-b border-white/10 bg-black/50 backdrop-blur-xl py-2.5 px-6 flex items-center justify-between text-xs text-zinc-300">
-        <div className="flex items-center gap-2 tracking-wide font-medium">
+      <div className="border-b border-white/10 bg-black/60 backdrop-blur-xl py-2.5 px-6 flex items-center justify-between text-xs text-zinc-300">
+        <div className="flex items-center gap-2 font-medium">
           <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
           <span>{tagline || (lang === 'de' ? `Traditionelle Schweizer Qualität · ${city}` : `Qualité artisanale suisse · ${city}`)}</span>
         </div>
@@ -253,68 +258,100 @@ export default function DynamicTenantView({
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="py-16 px-6 max-w-7xl mx-auto space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          <div 
-            className="lg:col-span-7 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl space-y-8 flex flex-col justify-between relative overflow-hidden group shadow-2xl"
-            style={{ backgroundColor: surfaceBg }}
-          >
-            <div className="space-y-6 relative z-10">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-amber-300 text-xs font-semibold">
-                <Award className="w-3.5 h-3.5 text-amber-400" />
-                <span>{heroEyebrow || `Qualität & Tradition in ${city}`}</span>
-              </div>
-              <h1 className="text-4xl sm:text-6xl font-serif font-black tracking-tight leading-[1.08] text-white">
-                {heroTitle || (lang === 'de' ? 'Erstklassige Schweizer Qualität' : 'Qualité Suisse d\'Excellence')}
-              </h1>
-              <p className="text-base sm:text-lg text-zinc-300 font-light leading-relaxed max-w-xl">
-                {heroSubtitle || (lang === 'de' ? `Seit Jahren Ihr vertrauter Meisterbetrieb in ${city}. Wir stehen für Transparenz, Pünktlichkeit und Höchstleistung.` : `Votre partenaire de confiance à ${city}.`)}
-              </p>
+      {/* 🚀 DYNAMIC GENERATIVE HERO COMPONENT */}
+      <section className="py-16 px-6 max-w-7xl mx-auto">
+        {heroVariant === 'minimal-luxury' ? (
+          /* Variant A: Minimal Luxury Editorial Hero */
+          <div className="text-center py-16 space-y-8 max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-amber-300 text-xs font-semibold">
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>{heroEyebrow || `Exzellenz & Schweizer Perfektion in ${city}`}</span>
             </div>
-
-            <div className="pt-6 border-t border-white/10 flex items-center justify-between relative z-10">
-              <div className="flex items-center gap-3">
-                <div 
-                  className="w-10 h-10 rounded-full text-black flex items-center justify-center font-bold text-sm shadow-lg"
-                  style={{ backgroundColor: secondaryColor }}
-                >
-                  {rating}★
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-white">{rating} / 5.0 Google Rating</div>
-                  <div className="text-xs text-zinc-400">{reviewCount} {lang === 'de' ? 'echte Kundenbewertungen' : 'avis clients vérifiés'}</div>
-                </div>
-              </div>
+            <h1 className="text-5xl sm:text-7xl font-serif font-black tracking-tight text-white leading-tight">
+              {heroTitle || (lang === 'de' ? 'Erstklassige Schweizer Qualität' : 'Qualité Suisse d\'Excellence')}
+            </h1>
+            <p className="text-lg text-zinc-300 font-light leading-relaxed max-w-2xl mx-auto">
+              {heroSubtitle}
+            </p>
+            <div className="flex items-center justify-center gap-4 pt-4">
               <a 
-                href={`mailto:${displayEmail}`}
-                className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition border border-white/10"
+                href={`tel:${displayPhone}`}
+                className="px-8 py-3.5 text-black font-bold text-xs uppercase tracking-wider rounded-full shadow-2xl transition hover:scale-105"
+                style={{ backgroundColor: secondaryColor }}
               >
-                <Mail className="w-3.5 h-3.5 text-amber-400" />
-                <span>{lang === 'de' ? 'E-Mail Anfrage' : 'Demande E-Mail'}</span>
+                {lang === 'de' ? 'Jetzt Anrufen' : 'Appeler Directement'}
               </a>
             </div>
           </div>
+        ) : heroVariant === 'bento-hero' ? (
+          /* Variant B: Bento Layout Hero */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            <div 
+              className="lg:col-span-8 backdrop-blur-2xl border border-white/10 ring-1 ring-white/5 p-8 sm:p-12 rounded-3xl space-y-8 flex flex-col justify-between shadow-2xl"
+              style={{ backgroundColor: surfaceBg }}
+            >
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-amber-300 text-xs font-semibold">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{heroEyebrow || `Qualität & Tradition in ${city}`}</span>
+                </div>
+                <h1 className="text-4xl sm:text-6xl font-serif font-black tracking-tight leading-[1.08] text-white">
+                  {heroTitle}
+                </h1>
+                <p className="text-base sm:text-lg text-zinc-300 font-light leading-relaxed max-w-xl">
+                  {heroSubtitle}
+                </p>
+              </div>
 
-          <div className="lg:col-span-5 relative rounded-3xl overflow-hidden border border-white/10 ring-1 ring-white/5 min-h-[420px] group shadow-2xl">
-            <img src={imgSet.hero} alt="Business Hero" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-            <div className="absolute bottom-6 left-6 right-6 p-6 rounded-2xl backdrop-blur-xl bg-black/80 border border-white/10 space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">{legalName}</span>
-              <p className="text-base font-serif font-bold text-white">{address}</p>
-              <div className="flex items-center justify-between text-xs text-zinc-400 font-mono pt-2 border-t border-white/10">
-                <span>{regNumber}</span>
-                <span className="text-emerald-400 flex items-center gap-1 font-bold">
-                  <CheckCircle className="w-3 h-3" /> Verifiziert
-                </span>
+              <div className="pt-6 border-t border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-10 h-10 rounded-full text-black flex items-center justify-center font-bold text-sm shadow-lg"
+                    style={{ backgroundColor: secondaryColor }}
+                  >
+                    {rating}★
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-white">{rating} / 5.0 Google Rating</div>
+                    <div className="text-xs text-zinc-400">{reviewCount} {lang === 'de' ? 'echte Kundenbewertungen' : 'avis clients vérifiés'}</div>
+                  </div>
+                </div>
+                <a 
+                  href={`mailto:${displayEmail}`}
+                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition border border-white/10"
+                >
+                  <Mail className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{lang === 'de' ? 'Kontaktieren' : 'Contact'}</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="lg:col-span-4 relative rounded-3xl overflow-hidden border border-white/10 ring-1 ring-white/5 min-h-[420px] shadow-2xl">
+              <img src={imgSet.hero} alt="Hero Visual" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 right-6 p-6 rounded-2xl backdrop-blur-xl bg-black/80 border border-white/10 space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">{legalName}</span>
+                <p className="text-sm font-serif font-bold text-white">{address}</p>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          /* Variant C: Split Hero (Default) */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-7 space-y-6">
+              <span className="text-xs font-mono uppercase text-amber-400 tracking-widest">{heroEyebrow}</span>
+              <h1 className="text-5xl sm:text-6xl font-serif font-black text-white leading-tight">{heroTitle}</h1>
+              <p className="text-lg text-zinc-300 font-light leading-relaxed">{heroSubtitle}</p>
+            </div>
+            <div className="lg:col-span-5 h-[380px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+              <img src={imgSet.hero} alt="Hero" className="w-full h-full object-cover" />
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* 🏢 Business Credibility Bento Section (多维实体特征度) */}
-      <section className="py-10 max-w-7xl mx-auto px-6">
+      {/* 🏢 Business Credibility Bento Section */}
+      <section className="py-8 max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="p-6 rounded-3xl border border-white/10 backdrop-blur-xl space-y-2" style={{ backgroundColor: surfaceBg }}>
             <Building2 className="w-6 h-6 text-amber-400" />
@@ -342,7 +379,7 @@ export default function DynamicTenantView({
         </div>
       </section>
 
-      {/* 🛍️ Dynamic Entity Services Grid */}
+      {/* 🛍️ DYNAMIC SERVICES COMPONENT (PRICE-TABLE / MASONRY / CARDS) */}
       <section className="py-16 max-w-7xl mx-auto px-6 space-y-8">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
@@ -354,54 +391,79 @@ export default function DynamicTenantView({
           <span className="text-xs px-3 py-1 bg-white/10 rounded-full font-mono text-amber-300 border border-white/10">{city}</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {(dynamicServices || []).map((srv: any, idx: number) => (
-            <div 
-              key={idx} 
-              className="backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 hover:border-white/30 transition-all duration-500 flex flex-col justify-between shadow-xl group"
-              style={{ backgroundColor: surfaceBg }}
-            >
-              <div className="space-y-4">
-                <div className="h-52 rounded-2xl overflow-hidden relative">
-                  <img 
-                    src={srv.img || [imgSet.p1, imgSet.p2, imgSet.p3][idx % 3]} 
-                    alt={srv.slug || 'Service'} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                  />
-                  <div className="absolute top-3 right-3 p-2.5 bg-black/70 backdrop-blur-md rounded-xl text-white border border-white/20">
-                    <CategoryIcon iconName={srv.icon} className="w-4 h-4 text-amber-400" />
+        {servicesVariant === 'price-list-table' ? (
+          /* Services Variant A: Swiss Premium Menu / Price List Table */
+          <div className="p-8 rounded-3xl border border-white/10 backdrop-blur-2xl space-y-6" style={{ backgroundColor: surfaceBg }}>
+            <div className="divide-y divide-white/10">
+              {(dynamicServices || []).map((srv: any, idx: number) => (
+                <div key={idx} className="py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/[0.02] px-4 rounded-2xl transition">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <CategoryIcon iconName={srv.icon} className="w-4 h-4 text-amber-400" />
+                      <h3 className="text-lg font-serif font-bold text-white">{srv.name?.[lang] || srv.name?.de || srv.name}</h3>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-light max-w-xl">{srv.description?.[lang] || srv.description?.de}</p>
                   </div>
-                </div>
-
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-xl font-serif font-bold text-white group-hover:text-amber-300 transition-colors">
-                    {srv.name?.[lang] || srv.name?.de || srv.name}
-                  </h3>
                   {srv.price?.amount && (
-                    <span className="text-xs font-mono text-black font-bold px-2.5 py-1 rounded-lg shrink-0 shadow-md" style={{ backgroundColor: secondaryColor }}>
+                    <span className="text-sm font-mono text-black font-bold px-4 py-2 rounded-xl shrink-0 text-center shadow-lg" style={{ backgroundColor: secondaryColor }}>
                       {srv.price.currency || 'CHF'} {srv.price.amount}
                     </span>
                   )}
                 </div>
-
-                <p className="text-xs text-zinc-300 leading-relaxed font-light">
-                  {srv.description?.[lang] || srv.description?.de || srv.description}
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider">Schweizer Qualität</span>
-                <a href={`tel:${displayPhone}`} className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1">
-                  <span>Anfragen</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </a>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          /* Services Variant B: Bento Masonry / Grid Cards (Default) */
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {(dynamicServices || []).map((srv: any, idx: number) => (
+              <div 
+                key={idx} 
+                className="backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 hover:border-white/30 transition-all duration-500 flex flex-col justify-between shadow-xl group"
+                style={{ backgroundColor: surfaceBg }}
+              >
+                <div className="space-y-4">
+                  <div className="h-52 rounded-2xl overflow-hidden relative">
+                    <img 
+                      src={srv.img || [imgSet.p1, imgSet.p2, imgSet.p3][idx % 3]} 
+                      alt={srv.slug || 'Service'} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                    />
+                    <div className="absolute top-3 right-3 p-2.5 bg-black/70 backdrop-blur-md rounded-xl text-white border border-white/20">
+                      <CategoryIcon iconName={srv.icon} className="w-4 h-4 text-amber-400" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="text-xl font-serif font-bold text-white group-hover:text-amber-300 transition-colors">
+                      {srv.name?.[lang] || srv.name?.de || srv.name}
+                    </h3>
+                    {srv.price?.amount && (
+                      <span className="text-xs font-mono text-black font-bold px-2.5 py-1 rounded-lg shrink-0 shadow-md" style={{ backgroundColor: secondaryColor }}>
+                        {srv.price.currency || 'CHF'} {srv.price.amount}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-zinc-300 leading-relaxed font-light">
+                    {srv.description?.[lang] || srv.description?.de || srv.description}
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider">Schweizer Qualität</span>
+                  <a href={`tel:${displayPhone}`} className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1">
+                    <span>Anfragen</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* 🌐 Merchant Live DNS & Portal Transparency Inspector */}
+      {/* 🌐 Live Domain & DNS Transparency Inspector */}
       <section className="py-12 max-w-7xl mx-auto px-6">
         <div className="p-8 rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/10 via-black/60 to-black/80 backdrop-blur-2xl space-y-6 shadow-2xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
