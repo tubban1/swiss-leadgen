@@ -36,17 +36,24 @@ def rebuild_all_configs():
             
         category = l.get("category", "generic_business")
         
-        # 构建完备且契合行业属性的 JSON
-        new_config = builder.build_standard_site_config(l, subdomain)
+        slug = l.get("slug") or (subdomain.split(".")[0] if subdomain else "merchant")
+        
+        # 激活 AI Design Synthesizer 构建定制化 Generative JSON
+        new_config, _ = builder.generate_config(l, slug)
 
-        # 写入 Neon PostgreSQL
+        # 写入 Neon PostgreSQL 数据库
         update_lead(lead_id, site_config=new_config)
 
-        matched_preset = new_config.get("theme", {}).get("preset", "default")
-        print(f"✅ [重构成功] 商户: {name:<32} | 行业: {category:<15} ➔ Preset Theme: {matched_preset}")
+        theme_info = new_config.get("theme", {})
+        visual_style = theme_info.get("visual_style", "generative")
+        sections = new_config.get("sections", {})
+        hero_var = sections.get("hero", {}).get("variant", "default")
+        srv_var = sections.get("services", {}).get("variant", "default")
+        
+        print(f"✨ [重构成功] 商户: {name:<30} | 风格: {visual_style:<15} | Hero: {hero_var:<15} | Services: {srv_var}")
 
     print("\n" + "="*90)
-    print("✨ [升维完成] 全量 14 家商户 site_config 已 100% 具备专属行业主题、服务列表与高质感内容！")
+    print("🚀 [全量网页优化完毕] 14 家商户已全部升级为 Generative UI 非固定模板独立视觉架构！")
     print("="*90 + "\n")
 
 if __name__ == "__main__":
